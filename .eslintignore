@@ -1,0 +1,6 @@
+/dist-ssr/
+/dist/
+/node_modules/
+
+!/.*.js
+!/.*.ts
