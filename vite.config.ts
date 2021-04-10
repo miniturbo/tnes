@@ -3,6 +3,11 @@ import { defineConfig } from 'vite'
 import reactRefresh from '@vitejs/plugin-react-refresh'
 
 export default defineConfig({
+  css: {
+    modules: {
+      localsConvention: 'camelCaseOnly',
+    },
+  },
   plugins: [reactRefresh()],
   resolve: {
     alias: {
