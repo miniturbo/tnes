@@ -1,5 +1,11 @@
 import { NullableError } from '/@/errors'
 
+export * from '/@/utils/integer'
+
+export function capitalize(value: string): string {
+  return value[0].toUpperCase() + value.slice(1)
+}
+
 export function nonNullable<T>(value: T): value is NonNullable<T> {
   return value !== null
 }

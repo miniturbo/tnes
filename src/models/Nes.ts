@@ -1,87 +1,116 @@
-import { Cycle, Logger, VideoRenderer } from '/@/types'
-import Cpu from '/@/models/Cpu'
-import CpuBus from '/@/models/CpuBus'
-import Ppu from '/@/models/Ppu'
-import PpuBus from '/@/models/PpuBus'
-import Ram from '/@/models/Ram'
-import Rom from '/@/models/Rom'
+import { CpuCycle, Logger, NesState, VideoRenderer } from '/@/types'
+import { Controller } from '/@/models/Controller'
+import { Cpu, CpuBus } from '/@/models/Cpu'
+import { Ppu, PpuBus } from '/@/models/Ppu'
+import { Ram } from '/@/models/Ram'
+import { Rom } from '/@/models/Rom'
+import { InterruptController } from './InterruptController'
 
-export default class Nes {
-  static readonly CPU_CYCLES_PER_FRAME: Cycle = Math.ceil((341 * 262) / 3)
-  static readonly CPU_CYCLES_PER_SCANLINE: Cycle = Math.ceil(341 / 3)
+export class Nes {
+  static readonly CPU_CYCLES_PER_FRAME: CpuCycle = Math.ceil((341 * 262) / 3)
+  static readonly CPU_CYCLES_PER_SCANLINE: CpuCycle = Math.ceil(341 / 3)
 
+  readonly controller1: Controller
+  readonly controller2: Controller
+
+  private state: NesState = NesState.powerOff
   private cpu: Cpu
   private cpuBus: CpuBus
   private ppu: Ppu
   private ppuBus: PpuBus
-  private workRam: Ram
-  private videoRam: Ram
-  private paletteRam: Ram
 
   constructor() {
-    this.workRam = new Ram(2048)
-    this.videoRam = new Ram(2048)
-    this.paletteRam = new Ram(32)
+    this.controller1 = new Controller()
+    this.controller2 = new Controller()
 
-    this.ppuBus = new PpuBus(this.videoRam, this.paletteRam)
-    this.ppu = new Ppu(this.ppuBus)
+    const videoRam = new Ram(2048)
+    const paletteRam = new Ram(32)
+    const workRam = new Ram(2048)
+    const interruptController = new InterruptController()
 
-    this.cpuBus = new CpuBus(this.workRam, this.ppu)
-    this.cpu = new Cpu(this.cpuBus)
+    this.ppuBus = new PpuBus(videoRam, paletteRam)
+    this.ppu = new Ppu(this.ppuBus, interruptController)
+
+    this.cpuBus = new CpuBus(workRam, this.ppu, this.controller1, this.controller2)
+    this.cpu = new Cpu(this.cpuBus, interruptController)
   }
 
-  setDebug(debug: boolean): void {
-    this.cpu.setDebug(debug)
-    this.cpuBus.setDebug(debug)
-    this.ppu.setDebug(debug)
-    this.ppuBus.setDebug(debug)
+  get isRun(): boolean {
+    return this.state === NesState.run
   }
 
-  setLogger(logger: Logger): void {
-    this.cpu.setLogger(logger)
-    this.cpuBus.setLogger(logger)
-    this.ppu.setLogger(logger)
-    this.ppuBus.setLogger(logger)
+  set debug(debug: boolean) {
+    this.cpu.debug = debug
+    this.cpuBus.debug = debug
+    this.ppu.debug = debug
+    this.ppuBus.debug = debug
   }
 
-  setRom(rom: Rom): void {
-    this.cpuBus.setRom(rom)
-    this.ppuBus.setRom(rom)
+  set logger(logger: Logger) {
+    this.cpu.logger = logger
+    this.cpuBus.logger = logger
+    this.ppu.logger = logger
+    this.ppuBus.logger = logger
   }
 
-  setVideoRenderer(videoRenderer: VideoRenderer): void {
-    this.ppu.setVideoRenderer(videoRenderer)
+  set rom(rom: Rom) {
+    this.cpuBus.rom = rom
+    this.ppuBus.rom = rom
+  }
+
+  set videoRenderer(videoRenderer: VideoRenderer) {
+    this.ppu.videoRenderer = videoRenderer
   }
 
   bootup(): void {
+    this.state = NesState.run
     this.cpu.bootup()
   }
 
   run(): void {
-    this.runFrame()
+    if (!this.isRun) return
+
+    for (let i = 0; i < Nes.CPU_CYCLES_PER_FRAME; i++) {
+      this.runCycle()
+    }
 
     requestAnimationFrame(() => this.run())
   }
 
   runFrame(): void {
+    if (this.isRun) return
+
     for (let i = 0; i < Nes.CPU_CYCLES_PER_FRAME; i++) {
       this.runCycle()
     }
   }
 
   runScanline(): void {
+    if (this.isRun) return
+
     for (let i = 0; i < Nes.CPU_CYCLES_PER_SCANLINE; i++) {
       this.runCycle()
     }
   }
 
   runStep(): void {
+    if (this.isRun) return
+
     do {
       this.runCycle()
     } while (this.cpu.isStall)
   }
 
-  runCycle(): void {
+  stop(): void {
+    this.state = NesState.stop
+  }
+
+  resume(): void {
+    this.state = NesState.run
+    this.run()
+  }
+
+  private runCycle(): void {
     this.cpu.runCycle()
     this.ppu.runCycle()
     this.ppu.runCycle()

@@ -1,4 +1,4 @@
-export default class Sprite {
+export class Sprite {
   static readonly WIDTH: number = 8
   static readonly HEIGHT: number = 8
   static readonly BYTE_SIZE: number = 16

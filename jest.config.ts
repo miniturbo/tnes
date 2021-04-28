@@ -5,7 +5,10 @@ import { compilerOptions } from './tsconfig.json'
 const config: Config.InitialOptions = {
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>/' }),
+  moduleNameMapper: {
+    ...pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>/' }),
+    'spec/(.*)$': '<rootDir>/spec/$1',
+  },
   preset: 'ts-jest',
   restoreMocks: true,
 }

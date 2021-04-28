@@ -1,22 +1,19 @@
 import { Memoize } from 'typescript-memoize'
 
-export default class Rom {
-  static readonly HEADER_SIZE: number = 0x0010
+export class Rom {
+  static readonly HEADER_SIZE: number = 0x10
   static readonly PROGRAM_ROM_UNIT: number = 0x4000
   static readonly CHARACTER_ROM_UNIT: number = 0x2000
 
-  static async load(uri: string): Promise<Rom> {
-    const response = await fetch(uri)
-    const buffer = await response.arrayBuffer()
-    const view = new Uint8Array(buffer)
-    return new this(view)
+  static load(buffer: ArrayBuffer): Rom {
+    return new this(new Uint8Array(buffer))
   }
 
   constructor(private view: Uint8Array) {}
 
   @Memoize()
   get programRom(): Uint8Array {
-    return this.view.slice(Rom.HEADER_SIZE, Rom.HEADER_SIZE + this.programRomSize - 1)
+    return this.view.slice(Rom.HEADER_SIZE, Rom.HEADER_SIZE + this.programRomSize - 0x0001)
   }
 
   @Memoize()
@@ -30,10 +27,15 @@ export default class Rom {
   }
 
   @Memoize()
+  get programRomMirrored(): boolean {
+    return this.programRomPages === 1
+  }
+
+  @Memoize()
   get characterRom(): Uint8Array {
     return this.view.slice(
       Rom.HEADER_SIZE + this.programRomSize,
-      Rom.HEADER_SIZE + this.programRomSize + this.characterRomSize - 1
+      Rom.HEADER_SIZE + this.programRomSize + this.characterRomSize - 0x0001
     )
   }
 
@@ -48,7 +50,7 @@ export default class Rom {
   }
 
   readProgramRom(address: Uint16): Uint8 {
-    return this.programRom[address - 0x8000]
+    return this.programRom[(this.programRomMirrored ? address & 0xbfff : address) - 0x8000]
   }
 
   readCharacterRom(address: Uint16): Uint8 {

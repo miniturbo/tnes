@@ -1,4 +1,4 @@
-export default class Ram {
+export class Ram {
   private view: Uint8Array
 
   constructor(size: number) {

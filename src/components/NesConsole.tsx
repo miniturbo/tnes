@@ -1,7 +1,8 @@
 import React, { ChangeEvent, Dispatch, SetStateAction, useMemo, useState } from 'react'
 import styles from '/@/assets/stylesheets/components/NesConsole.module.css'
-import NesConsoleLog from '/@/components/NesConsoleLog'
-import Nes from '/@/models/Nes'
+import { NesConsoleLog } from '/@/components/NesConsoleLog'
+import { Nes } from '/@/models/Nes'
+import { Rom } from '/@/models/Rom'
 
 class NesConsoleLogger {
   static readonly FLUSH_INTERVAL = 100
@@ -36,7 +37,8 @@ type Props = {
   nes: Nes
 }
 
-const NesConsole: React.FC<Props> = ({ nes }) => {
+export const NesConsole: React.FC<Props> = ({ nes }) => {
+  const [fileName, updateFileName] = useState('No ROM choose')
   const [logs, updateLogs] = useState<string[]>([])
   const [searchKeyword, setSearchKeyword] = useState('')
   const filteredLogs = useMemo(() => {
@@ -45,40 +47,52 @@ const NesConsole: React.FC<Props> = ({ nes }) => {
       : logs.filter((log) => log.toLocaleLowerCase().indexOf(searchKeyword.toLocaleLowerCase()) !== -1)
   }, [logs, searchKeyword])
 
-  const logger = new NesConsoleLogger(updateLogs)
+  nes.logger = new NesConsoleLogger(updateLogs)
 
-  nes.setLogger(logger)
+  const handleLoad = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return
 
-  const handleBootup = () => {
-    nes.bootup()
+    const file = event.target.files[0]
+
+    updateFileName(file.name)
+
+    const reader = new FileReader()
+    reader.addEventListener('load', () => {
+      if (!(reader.result instanceof ArrayBuffer)) return
+      nes.rom = Rom.load(reader.result)
+      nes.bootup()
+    })
+    reader.readAsArrayBuffer(file)
   }
 
   const handleRun = () => {
     nes.run()
   }
 
+  const handleStop = () => {
+    nes.stop()
+  }
+
+  const handleResume = () => {
+    nes.resume()
+  }
+
   const handleRunFrame = () => {
-    nes.setDebug(true)
+    nes.debug = true
     nes.runFrame()
-    nes.setDebug(false)
+    nes.debug = false
   }
 
   const handleRunScanline = () => {
-    nes.setDebug(true)
+    nes.debug = true
     nes.runScanline()
-    nes.setDebug(false)
+    nes.debug = false
   }
 
   const handleRunStep = () => {
-    nes.setDebug(true)
+    nes.debug = true
     nes.runStep()
-    nes.setDebug(false)
-  }
-
-  const handleRunCycle = () => {
-    nes.setDebug(true)
-    nes.runCycle()
-    nes.setDebug(false)
+    nes.debug = false
   }
 
   const handleClear = () => {
@@ -91,28 +105,43 @@ const NesConsole: React.FC<Props> = ({ nes }) => {
 
   return (
     <div className={styles.nesConsole}>
-      <div className="buttons are-small has-addons mb-2">
-        <button className="button" onClick={handleBootup}>
-          Bootup
-        </button>
-        <button className="button" onClick={handleRun}>
-          Run
-        </button>
-        <button className="button" onClick={handleRunFrame}>
-          Run Frame
-        </button>
-        <button className="button" onClick={handleRunScanline}>
-          Run Scanline
-        </button>
-        <button className="button" onClick={handleRunStep}>
-          Run Step
-        </button>
-        <button className="button" onClick={handleRunCycle}>
-          Run Cycle
-        </button>
-        <button className="button" onClick={handleClear}>
-          Run Clear
-        </button>
+      <div className="field is-grouped">
+        <div className="control">
+          <div className="file is-small has-name">
+            <label className="file-label">
+              <input className="file-input" type="file" accept=".nes" onChange={handleLoad} />
+              <span className="file-cta">
+                <span className="file-label">Choose ROM…</span>
+              </span>
+              <span className="file-name">{fileName}</span>
+            </label>
+          </div>
+        </div>
+        <div className="control is-expanded">
+          <div className="buttons are-small has-addons">
+            <button className="button" onClick={handleRun}>
+              Run
+            </button>
+            <button className="button" onClick={handleStop}>
+              Stop
+            </button>
+            <button className="button" onClick={handleResume}>
+              Resume
+            </button>
+            <button className="button" onClick={handleRunFrame}>
+              Run Frame
+            </button>
+            <button className="button" onClick={handleRunScanline}>
+              Run Scanline
+            </button>
+            <button className="button" onClick={handleRunStep}>
+              Run Step
+            </button>
+            <button className="button" onClick={handleClear}>
+              Run Clear
+            </button>
+          </div>
+        </div>
       </div>
       <div className="mb-4">
         <input className="input is-small" type="text" value={searchKeyword} onChange={handleChange} />
@@ -121,5 +150,3 @@ const NesConsole: React.FC<Props> = ({ nes }) => {
     </div>
   )
 }
-
-export default NesConsole

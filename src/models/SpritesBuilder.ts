@@ -1,7 +1,7 @@
-import Rom from '/@/models/Rom'
-import Sprite from '/@/models/Sprite'
+import { Rom } from '/@/models/Rom'
+import { Sprite } from '/@/models/Sprite'
 
-export default class SpritesBuilder {
+export class SpritesBuilder {
   constructor(private rom: Rom) {}
 
   private get spritesNumber(): number {
