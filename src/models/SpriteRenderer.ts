@@ -1,6 +1,6 @@
-import Sprite from '/@/models/Sprite'
+import { Sprite } from '/@/models/Sprite'
 
-export default class SpriteRenderer {
+export class SpriteRenderer {
   static readonly CANVAS_MAX_WIDTH: number = 640
 
   constructor(private sprites: Sprite[], private canvas: HTMLCanvasElement, private pixelRatio = 1) {}

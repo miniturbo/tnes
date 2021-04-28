@@ -1,7 +1,7 @@
 import { Rgb, VideoRenderer } from '/@/types'
 import { validateNonNullable } from '/@/utils'
 
-export default class CanvasRenderer implements VideoRenderer {
+export class CanvasRenderer implements VideoRenderer {
   static readonly CANVAS_WIDTH: number = 256
   static readonly CANVAS_HEIGHT: number = 240
 

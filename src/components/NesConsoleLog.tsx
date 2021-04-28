@@ -6,7 +6,7 @@ type Props = {
   logs: string[]
 }
 
-const NesConsoleLog: React.FC<Props> = ({ logs }) => {
+export const NesConsoleLog: React.FC<Props> = ({ logs }) => {
   return (
     <Virtuoso
       className={styles.nesConsoleLogList}
@@ -24,5 +24,3 @@ const NesConsoleLog: React.FC<Props> = ({ logs }) => {
     />
   )
 }
-
-export default NesConsoleLog
