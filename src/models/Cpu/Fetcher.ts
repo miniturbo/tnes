@@ -7,7 +7,7 @@ export class Fetcher {
   constructor(private bus: Bus, private registers: Registers) {}
 
   fetch(): Instruction {
-    const opcode = this.bus.read(this.registers.programCounter)
+    const opcode = this.bus.read(this.registers.programCounter, { isOpcode: true })
 
     this.registers.advanceProgramCounter()
 

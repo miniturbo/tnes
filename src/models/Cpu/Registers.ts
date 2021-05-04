@@ -1,4 +1,4 @@
-import { bitFlag, maskAsByte, maskAsWord, setBitFlag, toHex } from '/@/utils'
+import { bitFlag, maskAsByte, maskAsWord, setBitFlag } from '/@/utils'
 
 /*
   7  bit  0
@@ -90,23 +90,5 @@ export class Registers {
 
   advanceProgramCounter(): void {
     this.programCounter = maskAsWord(this.programCounter + 0x1)
-  }
-
-  inspect(): string {
-    return (
-      `PC: ${toHex(this.programCounter, 4)}, ` +
-      `SP: ${toHex(this.stackPointer, 2)}, ` +
-      `A: ${toHex(this.accumulator, 2)}, ` +
-      `X: ${toHex(this.indexX, 2)}, ` +
-      `Y: ${toHex(this.indexY, 2)}, ` +
-      `C: ${this.carryFlag}, ` +
-      `Z: ${this.zeroFlag}, ` +
-      `I: ${this.interruptDisableFlag}, ` +
-      `D: ${this.decimalModeFlag}, ` +
-      `B: ${this.breakCommandFlag}, ` +
-      `R: ${this.reservedFlag}, ` +
-      `V: ${this.overflowFlag}, ` +
-      `N: ${this.negativeFlag}`
-    )
   }
 }

@@ -30,196 +30,196 @@ export class Executor {
   // see: http://obelisk.me.uk/6502/reference.html
   execute(instruction: Instruction, operands: Operands): CpuCycle {
     switch (instruction.type) {
-      case CpuInstructionType.adc: {
+      case CpuInstructionType.Adc: {
         return this.executeAdc(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.and: {
+      case CpuInstructionType.And: {
         return this.executeAnd(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.asl: {
+      case CpuInstructionType.Asl: {
         return this.executeAsl(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.bcc: {
+      case CpuInstructionType.Bcc: {
         return this.executeBcc(operands)
       }
-      case CpuInstructionType.bcs: {
+      case CpuInstructionType.Bcs: {
         return this.executeBcs(operands)
       }
-      case CpuInstructionType.beq: {
+      case CpuInstructionType.Beq: {
         return this.executeBeq(operands)
       }
-      case CpuInstructionType.bit: {
+      case CpuInstructionType.Bit: {
         return this.executeBit(operands)
       }
-      case CpuInstructionType.bmi: {
+      case CpuInstructionType.Bmi: {
         return this.executeBmi(operands)
       }
-      case CpuInstructionType.bne: {
+      case CpuInstructionType.Bne: {
         return this.executeBne(operands)
       }
-      case CpuInstructionType.bpl: {
+      case CpuInstructionType.Bpl: {
         return this.executeBpl(operands)
       }
-      case CpuInstructionType.brk: {
+      case CpuInstructionType.Brk: {
         return this.executeBrk()
       }
-      case CpuInstructionType.bvc: {
+      case CpuInstructionType.Bvc: {
         return this.executeBvc(operands)
       }
-      case CpuInstructionType.bvs: {
+      case CpuInstructionType.Bvs: {
         return this.executeBvs(operands)
       }
-      case CpuInstructionType.clc: {
+      case CpuInstructionType.Clc: {
         return this.executeClc()
       }
-      case CpuInstructionType.cld: {
+      case CpuInstructionType.Cld: {
         return this.executeCld()
       }
-      case CpuInstructionType.cli: {
+      case CpuInstructionType.Cli: {
         return this.executeCli()
       }
-      case CpuInstructionType.clv: {
+      case CpuInstructionType.Clv: {
         return this.executeClv()
       }
-      case CpuInstructionType.cmp: {
+      case CpuInstructionType.Cmp: {
         return this.executeCmp(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.cpx: {
+      case CpuInstructionType.Cpx: {
         return this.executeCpx(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.cpy: {
+      case CpuInstructionType.Cpy: {
         return this.executeCpy(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.dcp: {
+      case CpuInstructionType.Dcp: {
         return this.executeDcp(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.dec: {
+      case CpuInstructionType.Dec: {
         return this.executeDec(operands)
       }
-      case CpuInstructionType.dex: {
+      case CpuInstructionType.Dex: {
         return this.executeDex()
       }
-      case CpuInstructionType.dey: {
+      case CpuInstructionType.Dey: {
         return this.executeDey()
       }
-      case CpuInstructionType.eor: {
+      case CpuInstructionType.Eor: {
         return this.executeEor(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.inc: {
+      case CpuInstructionType.Inc: {
         return this.executeInc(operands)
       }
-      case CpuInstructionType.inx: {
+      case CpuInstructionType.Inx: {
         return this.executeInx()
       }
-      case CpuInstructionType.iny: {
+      case CpuInstructionType.Iny: {
         return this.executeIny()
       }
-      case CpuInstructionType.isb: {
+      case CpuInstructionType.Isb: {
         return this.executeIsb(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.jmp: {
+      case CpuInstructionType.Jmp: {
         return this.executeJmp(operands)
       }
-      case CpuInstructionType.jsr: {
+      case CpuInstructionType.Jsr: {
         return this.executeJsr(operands)
       }
-      case CpuInstructionType.lax: {
+      case CpuInstructionType.Lax: {
         return this.executeLax(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.lda: {
+      case CpuInstructionType.Lda: {
         return this.executeLda(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.ldx: {
+      case CpuInstructionType.Ldx: {
         return this.executeLdx(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.ldy: {
+      case CpuInstructionType.Ldy: {
         return this.executeLdy(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.lsr: {
+      case CpuInstructionType.Lsr: {
         return this.executeLsr(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.nop: {
+      case CpuInstructionType.Nop: {
         return this.executeNop(operands)
       }
-      case CpuInstructionType.ora: {
+      case CpuInstructionType.Ora: {
         return this.executeOra(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.pha: {
+      case CpuInstructionType.Pha: {
         return this.executePha()
       }
-      case CpuInstructionType.php: {
+      case CpuInstructionType.Php: {
         return this.executePhp()
       }
-      case CpuInstructionType.pla: {
+      case CpuInstructionType.Pla: {
         return this.executePla()
       }
-      case CpuInstructionType.plp: {
+      case CpuInstructionType.Plp: {
         return this.executePlp()
       }
-      case CpuInstructionType.rla: {
+      case CpuInstructionType.Rla: {
         return this.executeRla(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.rol: {
+      case CpuInstructionType.Rol: {
         return this.executeRol(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.ror: {
+      case CpuInstructionType.Ror: {
         return this.executeRor(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.rra: {
+      case CpuInstructionType.Rra: {
         return this.executeRra(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.rti: {
+      case CpuInstructionType.Rti: {
         return this.executeRti()
       }
-      case CpuInstructionType.rts: {
+      case CpuInstructionType.Rts: {
         return this.executeRts()
       }
-      case CpuInstructionType.sax: {
+      case CpuInstructionType.Sax: {
         return this.executeSax(operands)
       }
-      case CpuInstructionType.sbc: {
+      case CpuInstructionType.Sbc: {
         return this.executeSbc(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.sec: {
+      case CpuInstructionType.Sec: {
         return this.executeSec()
       }
-      case CpuInstructionType.sed: {
+      case CpuInstructionType.Sed: {
         return this.executeSed()
       }
-      case CpuInstructionType.sei: {
+      case CpuInstructionType.Sei: {
         return this.executeSei()
       }
-      case CpuInstructionType.slo: {
+      case CpuInstructionType.Slo: {
         return this.executeSlo(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.sre: {
+      case CpuInstructionType.Sre: {
         return this.executeSre(operands, instruction.addressingMode)
       }
-      case CpuInstructionType.sta: {
+      case CpuInstructionType.Sta: {
         return this.executeSta(operands)
       }
-      case CpuInstructionType.stx: {
+      case CpuInstructionType.Stx: {
         return this.executeStx(operands)
       }
-      case CpuInstructionType.sty: {
+      case CpuInstructionType.Sty: {
         return this.executeSty(operands)
       }
-      case CpuInstructionType.tax: {
+      case CpuInstructionType.Tax: {
         return this.executeTax()
       }
-      case CpuInstructionType.tay: {
+      case CpuInstructionType.Tay: {
         return this.executeTay()
       }
-      case CpuInstructionType.tsx: {
+      case CpuInstructionType.Tsx: {
         return this.executeTsx()
       }
-      case CpuInstructionType.txa: {
+      case CpuInstructionType.Txa: {
         return this.executeTxa()
       }
-      case CpuInstructionType.txs: {
+      case CpuInstructionType.Txs: {
         return this.executeTxs()
       }
-      case CpuInstructionType.tya: {
+      case CpuInstructionType.Tya: {
         return this.executeTya()
       }
       default: {
@@ -230,7 +230,7 @@ export class Executor {
 
   // see: http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
   private executeAdc(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.accumulator + operand + (this.registers.carryFlag ? 0x1 : 0x0)
 
     this.registers.carryFlag = isCarry(result)
@@ -243,7 +243,7 @@ export class Executor {
   }
 
   private executeAnd(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.accumulator & operand
 
     this.registers.zeroFlag = isZero(result)
@@ -254,7 +254,7 @@ export class Executor {
   }
 
   private executeAsl(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    if (addressingMode === CpuAddressingMode.accumulator) {
+    if (addressingMode === CpuAddressingMode.Accumulator) {
       const operand = this.registers.accumulator
       const result = operand << 1
 
@@ -380,7 +380,7 @@ export class Executor {
   }
 
   private executeCmp(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.accumulator - operand
 
     this.registers.carryFlag = isBorrow(result)
@@ -391,7 +391,7 @@ export class Executor {
   }
 
   private executeCpx(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.indexX - operand
 
     this.registers.carryFlag = isBorrow(result)
@@ -402,7 +402,7 @@ export class Executor {
   }
 
   private executeCpy(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.indexY - operand
 
     this.registers.carryFlag = isBorrow(result)
@@ -450,7 +450,7 @@ export class Executor {
   }
 
   private executeEor(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.accumulator ^ operand
 
     this.registers.zeroFlag = isZero(result)
@@ -517,7 +517,7 @@ export class Executor {
   }
 
   private executeLda(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
 
     this.registers.zeroFlag = isZero(operand)
     this.registers.negativeFlag = isNegative(operand)
@@ -527,7 +527,7 @@ export class Executor {
   }
 
   private executeLdx(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
 
     this.registers.zeroFlag = isZero(operand)
     this.registers.negativeFlag = isNegative(operand)
@@ -537,7 +537,7 @@ export class Executor {
   }
 
   private executeLdy(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
 
     this.registers.zeroFlag = isZero(operand)
     this.registers.negativeFlag = isNegative(operand)
@@ -547,7 +547,7 @@ export class Executor {
   }
 
   private executeLsr(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    if (addressingMode === CpuAddressingMode.accumulator) {
+    if (addressingMode === CpuAddressingMode.Accumulator) {
       const operand = this.registers.accumulator
       const result = operand >> 1
 
@@ -573,7 +573,7 @@ export class Executor {
   }
 
   private executeOra(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.accumulator | operand
 
     this.registers.zeroFlag = isZero(result)
@@ -625,7 +625,7 @@ export class Executor {
   }
 
   private executeRol(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    if (addressingMode === CpuAddressingMode.accumulator) {
+    if (addressingMode === CpuAddressingMode.Accumulator) {
       const operand = this.registers.accumulator
       const result = (operand << 1) | (this.registers.carryFlag ? 0x1 : 0x0)
 
@@ -647,7 +647,7 @@ export class Executor {
   }
 
   private executeRor(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    if (addressingMode === CpuAddressingMode.accumulator) {
+    if (addressingMode === CpuAddressingMode.Accumulator) {
       const operand = this.registers.accumulator
       const result = (operand >> 1) | ((this.registers.carryFlag ? 0x1 : 0x0) << 7)
 
@@ -701,7 +701,7 @@ export class Executor {
 
   // see: http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
   private executeSbc(operands: Operands, addressingMode: CpuAddressingMode): CpuCycle {
-    const operand = addressingMode === CpuAddressingMode.immediate ? operands.operand : this.bus.read(operands.operand)
+    const operand = addressingMode === CpuAddressingMode.Immediate ? operands.operand : this.bus.read(operands.operand)
     const result = this.registers.accumulator + ~operand + (this.registers.carryFlag ? 0x1 : 0x0)
 
     this.registers.carryFlag = isBorrow(result)

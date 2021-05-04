@@ -1,15 +1,6 @@
-import { Logger, NesDumper, PpuCycle, PpuScanline, Rgb, VideoRenderer } from '/@/types'
+import { NesDumper, PpuCycle, PpuScanline, Rgb, VideoRenderer } from '/@/types'
 import { BadAddressError } from '/@/errors'
-import {
-  bitFlag,
-  bitOf,
-  combineLowByteToWord,
-  maskAsByte,
-  maskAsWord,
-  shiftLeft,
-  toHex,
-  validateNonNullable,
-} from '/@/utils'
+import { bitFlag, bitOf, combineLowByteToWord, maskAsByte, maskAsWord, shiftLeft } from '/@/utils'
 import { Bus } from '/@/models/Ppu/Bus'
 import { InterruptController } from '/@/models/InterruptController'
 import { Latches } from '/@/models/Ppu/Latches'
@@ -20,19 +11,26 @@ import { ShiftRegisters } from '/@/models/Ppu/ShiftRegister'
 export { Bus as PpuBus }
 
 export class Ppu {
-  debug = false
-  logger: Logger | null = null
   dumper: NesDumper | null = null
   videoRenderer: VideoRenderer | null = null
 
-  private scanline: PpuScanline = 0
-  private cycle: PpuCycle = 0
-  private palettes = new Palettes()
+  readonly registers = new Registers()
+  readonly palettes = new Palettes()
+
+  private _scanline: PpuScanline = 0
+  private _cycle: PpuCycle = 0
   private latches = new Latches()
-  private registers = new Registers()
   private shiftRegisters = new ShiftRegisters()
 
   constructor(private bus: Bus, private interruptController: InterruptController) {}
+
+  get scanline(): PpuScanline {
+    return this._scanline
+  }
+
+  get cycle(): PpuCycle {
+    return this._cycle
+  }
 
   private get isBackgroundEnabled(): boolean {
     return this.registers.isBackgroundEnabled
@@ -110,15 +108,6 @@ export class Ppu {
       this.dumper.ppuScanline = this.scanline
       this.dumper.ppuCycle = this.cycle
     }
-
-    if (this.debug && this.logger) {
-      this.logger.log(`[Ppu] ${this.inspect()}`)
-      this.logger.log(`[Ppu Latch] ${this.latches.inspect()}`)
-      this.logger.log(`[Ppu Control Register] ${this.registers.inspectController()}`)
-      this.logger.log(`[Ppu Mask Register] ${this.registers.inspectMask()}`)
-      this.logger.log(`[Ppu Status Register] ${this.registers.inspectStatus()}`)
-      this.logger.log(`[Ppu Shift Register] ${this.shiftRegisters.inspect()}`)
-    }
   }
 
   readRegister(address: Uint16): Uint8 {
@@ -131,6 +120,23 @@ export class Ppu {
       }
       case 0x2002: {
         return this.registers.status
+      }
+      case 0x2003: {
+        return 0x00
+      }
+      case 0x2004: {
+        // TODO: Implement OAM data
+        return 0x00
+      }
+      case 0x2005: {
+        return 0x00
+      }
+      case 0x2006: {
+        return 0x00
+      }
+      case 0x2007: {
+        // Todo: Implement Data
+        return 0x00
       }
       default: {
         throw new BadAddressError(address)
@@ -146,6 +152,18 @@ export class Ppu {
       }
       case 0x2001: {
         this.registers.mask = data
+        break
+      }
+      case 0x2002: {
+        // noop
+        break
+      }
+      case 0x2003: {
+        // TODO: Implement OAM address
+        break
+      }
+      case 0x2004: {
+        // TODO: Implement OAM data
         break
       }
       case 0x2005: {
@@ -168,17 +186,17 @@ export class Ppu {
   }
 
   private renderPixel(): void {
+    if (!this.videoRenderer) return
+
     const x = this.cycle - 1
     const y = this.scanline
     const palette = this.registers.isBackgroundEnabled ? this.backgroundPalette() : this.defaultPalette()
-
-    validateNonNullable(this.videoRenderer)
 
     this.videoRenderer.renderPixel(x, y, palette)
   }
 
   private renderScreen(): void {
-    validateNonNullable(this.videoRenderer)
+    if (!this.videoRenderer) return
     this.videoRenderer.renderScreen()
   }
 
@@ -320,23 +338,15 @@ export class Ppu {
   }
 
   private tick(): void {
-    this.cycle++
+    this._cycle = this.cycle + 1
 
     if (this.cycle > 340) {
-      this.cycle = 0
-      this.scanline++
+      this._cycle = 0
+      this._scanline = this._scanline + 1
     }
 
     if (this.scanline > 261) {
-      this.scanline = 0
+      this._scanline = 0
     }
-  }
-
-  private inspect(): string {
-    return (
-      `scanline: ${this.scanline}, cycle: ${this.cycle}, ` +
-      `current VRAM address: ${toHex(this.registers.currentVideoRamAddress, 4)}, ` +
-      `temporary VRAM address: ${toHex(this.registers.temporaryVideoRamAddress, 4)}`
-    )
   }
 }

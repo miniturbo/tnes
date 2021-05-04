@@ -1,10 +1,12 @@
 import { CpuCycle, PpuCycle, PpuScanline } from '/@/types'
 import { CpuBus, CpuInstruction, CpuOperands, CpuRegisters } from '/@/models/Cpu'
 
+export type NesCycle = number
+
 export const NesState = {
-  powerOff: 'powerOff',
-  run: 'Run',
-  stop: 'Stop',
+  PoweredOff: 'PoweredOff',
+  Running: 'Running',
+  Paused: 'Paused',
 } as const
 
 export type NesDumper = {

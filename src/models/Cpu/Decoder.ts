@@ -10,43 +10,43 @@ export class Decoder {
 
   decode(addressingMode: CpuAddressingMode): Operands {
     switch (addressingMode) {
-      case CpuAddressingMode.implicit: {
+      case CpuAddressingMode.Implicit: {
         return this.fetchAndDecodeByImplicit()
       }
-      case CpuAddressingMode.accumulator: {
+      case CpuAddressingMode.Accumulator: {
         return this.fetchAndDecodeByAccumulator()
       }
-      case CpuAddressingMode.immediate: {
+      case CpuAddressingMode.Immediate: {
         return this.fetchAndDecodeByImmediate()
       }
-      case CpuAddressingMode.zeroPage: {
+      case CpuAddressingMode.ZeroPage: {
         return this.fetchAndDecodeByZeroPage()
       }
-      case CpuAddressingMode.zeroPageX: {
+      case CpuAddressingMode.ZeroPageX: {
         return this.fetchAndDecodeByZeroPageX()
       }
-      case CpuAddressingMode.zeroPageY: {
+      case CpuAddressingMode.ZeroPageY: {
         return this.fetchAndDecodeByZeroPageY()
       }
-      case CpuAddressingMode.relative: {
+      case CpuAddressingMode.Relative: {
         return this.fetchAndDecodeByRelative()
       }
-      case CpuAddressingMode.absolute: {
+      case CpuAddressingMode.Absolute: {
         return this.fetchAndDecodeByAbsolute()
       }
-      case CpuAddressingMode.absoluteX: {
+      case CpuAddressingMode.AbsoluteX: {
         return this.fetchAndDecodeByAbsoluteX()
       }
-      case CpuAddressingMode.absoluteY: {
+      case CpuAddressingMode.AbsoluteY: {
         return this.fetchAndDecodeByAbsoluteY()
       }
-      case CpuAddressingMode.indirect: {
+      case CpuAddressingMode.Indirect: {
         return this.fetchAndDecodeByIndirect()
       }
-      case CpuAddressingMode.indexedIndirect: {
+      case CpuAddressingMode.IndexedIndirect: {
         return this.fetchAndDecodeByIndexedIndirect()
       }
-      case CpuAddressingMode.indirectIndexed: {
+      case CpuAddressingMode.IndirectIndexed: {
         return this.fetchAndDecodeByIndirectIndexed()
       }
       default: {

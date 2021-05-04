@@ -1,27 +1,19 @@
-import { Logger } from '/@/types'
 import { BadAddressError } from '/@/errors'
-import { toHex, validateNonNullable } from '/@/utils'
 import { Ram } from '/@/models/Ram'
 import { Rom } from '/@/models/Rom'
 
 export class Bus {
-  debug = false
-  logger: Logger | null = null
   rom: Rom | null = null
 
   constructor(private videoRam: Ram, private paletteRam: Ram) {}
 
   read(address: Uint16): Uint8 {
-    if (this.debug && this.logger) {
-      this.logger.log(`[Ppu Bus] read address: ${toHex(address, 4)}`)
-    }
-
     if (address >= 0x0000 && address <= 0x1fff) {
-      validateNonNullable(this.rom)
-      return this.rom.readCharacterRom(address)
+      return this.rom ? this.rom.readCharacterRom(address) : 0x00
     } else if (address >= 0x2000 && address <= 0x2fff) {
-      return this.videoRam.read(address & 0x1fff) || 0 // TODO: Implement mirroring
-    } else if (address >= 0x3000 && address <= 0x3f1f) {
+      // TODO: Implement mirroring
+      return this.videoRam.read(address & 0x0fff) || 0
+    } else if (address >= 0x3000 && address <= 0x3fff) {
       return this.paletteRam.read(address & 0x1f)
     } else {
       throw new BadAddressError(address)
@@ -29,10 +21,6 @@ export class Bus {
   }
 
   write(address: Uint16, data: Uint8): void {
-    if (this.debug && this.logger) {
-      this.logger.log(`[Ppu Bus] write address: ${toHex(address, 4)}, data: ${toHex(data, 2)}`)
-    }
-
     if (address >= 0x0000 && address <= 0x1fff) {
       // TODO
     } else if (address >= 0x2000 && address <= 0x2fff) {

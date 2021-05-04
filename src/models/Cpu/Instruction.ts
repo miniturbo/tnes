@@ -6,6 +6,7 @@ export class Instruction {
     readonly type: CpuInstructionType,
     readonly addressingMode: CpuAddressingMode,
     readonly cycle: CpuCycle,
+    readonly byte: number,
     readonly isOfficial: boolean
   ) {}
 }

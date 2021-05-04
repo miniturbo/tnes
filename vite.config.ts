@@ -1,6 +1,6 @@
 import path from 'path'
 import { defineConfig } from 'vite'
-import reactRefresh from '@vitejs/plugin-react-refresh'
+import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   css: {
@@ -8,7 +8,7 @@ export default defineConfig({
       localsConvention: 'camelCaseOnly',
     },
   },
-  plugins: [reactRefresh()],
+  plugins: [vue()],
   resolve: {
     alias: {
       '/@': path.resolve(__dirname, 'src'),

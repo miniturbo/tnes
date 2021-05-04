@@ -1,3 +1,4 @@
+export * from '/@/types/controller'
 export * from '/@/types/cpu'
 export * from '/@/types/nes'
 export * from '/@/types/ppu'
