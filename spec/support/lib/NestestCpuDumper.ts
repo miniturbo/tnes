@@ -1,12 +1,6 @@
 import { CpuAddressingMode, CpuCycle, CpuInstructionType, NesDumper, PpuCycle, PpuScanline } from '/@/types'
 import { validateNonNullable } from '/@/utils'
 import { CpuBus, CpuInstruction, CpuOperands, CpuRegisters } from '/@/models/Cpu'
-import { Ppu } from '/@/models/Ppu'
-
-const reversedCpuInstructionType: { [key: string]: string } = Object.entries(CpuInstructionType).reduce(
-  (newObject, [key, value]) => ({ ...newObject, [value]: key.toUpperCase() }),
-  {}
-)
 
 type NestestDumperResult = {
   cpuProgramCounter: string
@@ -96,25 +90,25 @@ export class NestestCpuDumper implements NesDumper {
   private saveCpuInstructionType(): string {
     validateNonNullable(this.cpuInstruction)
 
-    return (this.cpuInstruction.isOfficial ? ' ' : '*') + reversedCpuInstructionType[this.cpuInstruction.type]
+    return (this.cpuInstruction.isOfficial ? ' ' : '*') + this.cpuInstruction.type.toUpperCase()
   }
 
   private saveCpuInstructionAddressAndValue(): string {
     validateNonNullable(this.cpuInstruction)
 
     switch (this.cpuInstruction.addressingMode) {
-      case CpuAddressingMode.implicit: {
+      case CpuAddressingMode.Implicit: {
         return '                           '
       }
-      case CpuAddressingMode.accumulator: {
+      case CpuAddressingMode.Accumulator: {
         return 'A                          '
       }
-      case CpuAddressingMode.immediate: {
+      case CpuAddressingMode.Immediate: {
         validateNonNullable(this.cpuOperands)
 
         return `#$${this.formatToHex(this.cpuOperands.operand, 2)}                       `
       }
-      case CpuAddressingMode.zeroPage: {
+      case CpuAddressingMode.ZeroPage: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 
@@ -123,7 +117,7 @@ export class NestestCpuDumper implements NesDumper {
           `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}                   `
         )
       }
-      case CpuAddressingMode.zeroPageX: {
+      case CpuAddressingMode.ZeroPageX: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 
@@ -133,7 +127,7 @@ export class NestestCpuDumper implements NesDumper {
           `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}            `
         )
       }
-      case CpuAddressingMode.zeroPageY: {
+      case CpuAddressingMode.ZeroPageY: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 
@@ -143,18 +137,18 @@ export class NestestCpuDumper implements NesDumper {
           `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}            `
         )
       }
-      case CpuAddressingMode.relative: {
+      case CpuAddressingMode.Relative: {
         validateNonNullable(this.cpuOperands)
 
         return `$${this.formatToHex(this.cpuOperands.operand, 4)}                      `
       }
-      case CpuAddressingMode.absolute: {
+      case CpuAddressingMode.Absolute: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 
         if (
-          this.cpuInstruction.type === CpuInstructionType.jmp ||
-          this.cpuInstruction.type === CpuInstructionType.jsr
+          this.cpuInstruction.type === CpuInstructionType.Jmp ||
+          this.cpuInstruction.type === CpuInstructionType.Jsr
         ) {
           return `$${this.formatToHex(this.cpuOperands.operand, 4)}                      `
         } else {
@@ -164,7 +158,7 @@ export class NestestCpuDumper implements NesDumper {
           )
         }
       }
-      case CpuAddressingMode.absoluteX: {
+      case CpuAddressingMode.AbsoluteX: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 
@@ -174,7 +168,7 @@ export class NestestCpuDumper implements NesDumper {
           `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}        `
         )
       }
-      case CpuAddressingMode.absoluteY: {
+      case CpuAddressingMode.AbsoluteY: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 
@@ -184,7 +178,7 @@ export class NestestCpuDumper implements NesDumper {
           `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}        `
         )
       }
-      case CpuAddressingMode.indirect: {
+      case CpuAddressingMode.Indirect: {
         validateNonNullable(this.cpuOperands)
 
         return (
@@ -192,7 +186,7 @@ export class NestestCpuDumper implements NesDumper {
           `${this.formatToHex(this.cpuOperands.operand, 4)}             `
         )
       }
-      case CpuAddressingMode.indexedIndirect: {
+      case CpuAddressingMode.IndexedIndirect: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 
@@ -203,7 +197,7 @@ export class NestestCpuDumper implements NesDumper {
           `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}   `
         )
       }
-      case CpuAddressingMode.indirectIndexed: {
+      case CpuAddressingMode.IndirectIndexed: {
         validateNonNullable(this.cpuOperands)
         validateNonNullable(this.cpuBus)
 

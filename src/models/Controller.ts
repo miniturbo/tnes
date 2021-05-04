@@ -1,4 +1,4 @@
-import { ControllerButton } from '/@/types/controller'
+import { ControllerButton } from '/@/types'
 
 export class Controller {
   private data: Uint8 = 0x00

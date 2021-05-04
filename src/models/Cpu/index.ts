@@ -1,22 +1,28 @@
-import { CpuCycle, Logger, NesDumper } from '/@/types'
-import { combineIntoWord, maskAsByte, maskAsWord, toHex } from '/@/utils'
+import { CpuCycle, NesDumper } from '/@/types'
+import { combineIntoWord, maskAsByte, maskAsWord } from '/@/utils'
 import { Bus } from '/@/models/Cpu/Bus'
 import { Decoder } from '/@/models/Cpu/Decoder'
 import { Executor } from '/@/models/Cpu/Executor'
 import { Fetcher } from '/@/models/Cpu/Fetcher'
 import { Instruction } from '/@/models/Cpu/Instruction'
+import { InstructionSet } from '/@/models/Cpu/InstructionSet'
 import { InterruptController } from '/@/models/InterruptController'
 import { Operands } from '/@/models/Cpu/Operands'
 import { Registers } from '/@/models/Cpu/Registers'
 
-export { Bus as CpuBus, Instruction as CpuInstruction, Operands as CpuOperands, Registers as CpuRegisters }
+export {
+  Bus as CpuBus,
+  Instruction as CpuInstruction,
+  InstructionSet as CpuInstructionSet,
+  Operands as CpuOperands,
+  Registers as CpuRegisters,
+}
 
 export class Cpu {
-  debug = false
-  logger: Logger | null = null
   dumper: NesDumper | null = null
 
-  private registers = new Registers()
+  readonly registers = new Registers()
+
   private fetcher = new Fetcher(this.bus, this.registers)
   private decoder = new Decoder(this.bus, this.registers)
   private executor = new Executor(this.bus, this.registers)
@@ -28,7 +34,7 @@ export class Cpu {
     return this.stallCycle > 0
   }
 
-  bootup(): void {
+  powerUp(): void {
     this.registers.programCounter = maskAsWord(0x0000)
     this.registers.stackPointer = maskAsByte(0x00)
     this.registers.accumulator = maskAsByte(0x00)
@@ -82,18 +88,6 @@ export class Cpu {
 
     if (this.dumper) {
       this.dumper.incrementCpuCycle(this.stallCycle + 1)
-    }
-
-    if (this.debug && this.logger) {
-      this.logger.log(
-        '[Cpu] ' +
-          `opcode: ${toHex(instruction.opcode, 2)}, ` +
-          `operand: ${toHex(operands.operand, 4)}, ` +
-          `instruction type: ${instruction.type}, ` +
-          `addressing mode: ${instruction.addressingMode}, ` +
-          `cycle: ${instruction.cycle}`
-      )
-      this.logger.log(`[Cpu Register] ${this.registers.inspect()}`)
     }
   }
 }

@@ -3,7 +3,6 @@ export class Ram {
 
   constructor(size: number) {
     this.view = new Uint8Array(size)
-    this.view.fill(0)
   }
 
   read(address: Uint16): Uint8 {
@@ -12,5 +11,9 @@ export class Ram {
 
   write(address: Uint16, data: Uint8): void {
     this.view[address] = data
+  }
+
+  reset(): void {
+    this.view.fill(0)
   }
 }

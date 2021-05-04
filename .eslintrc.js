@@ -10,16 +10,21 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['*.tsx'],
+      files: ['*.vue'],
+      globals: {
+        EventListener: true,
+        Uint16: true,
+        Uint8: true,
+      },
       extends: [
+        'plugin:vue/vue3-recommended',
         'eslint:recommended',
-        'plugin:@typescript-eslint/recommended',
-        'plugin:react/recommended',
-        'plugin:react-hooks/recommended',
-        'prettier',
+        '@vue/typescript/recommended',
+        '@vue/prettier',
+        '@vue/prettier/@typescript-eslint',
       ],
       rules: {
-        'react/prop-types': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
       },
     },
     {
@@ -31,9 +36,4 @@ module.exports = {
       extends: ['eslint:recommended', 'prettier'],
     },
   ],
-  settings: {
-    react: {
-      version: 'detect',
-    },
-  },
 }

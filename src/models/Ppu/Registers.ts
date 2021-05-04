@@ -1,4 +1,4 @@
-import { bitFlag, maskAsByte, setBitFlag, toHex } from '/@/utils'
+import { bitFlag, maskAsByte, setBitFlag } from '/@/utils'
 
 export class Registers {
   /*
@@ -66,6 +66,10 @@ export class Registers {
 
   get videoRamAddressIncrement(): number {
     return bitFlag(this.controller, 2) ? 32 : 1
+  }
+
+  get backgroundPatternTableAddres(): Uint16 {
+    return bitFlag(this.controller, 4) ? 0x1000 : 0x0000
   }
 
   get isNmiEnabled(): boolean {
@@ -137,26 +141,5 @@ export class Registers {
     }
 
     this.writeToggle = !this.writeToggle
-  }
-
-  inspectController(): string {
-    return `VRAM Inc: ${this.videoRamAddressIncrement}`
-  }
-
-  inspectMask(): string {
-    return (
-      `B: ${false}, ` +
-      `G: ${false}, ` +
-      `R: ${false}, ` +
-      `s: ${false}, ` +
-      `b: ${this.isBackgroundEnabled}, ` +
-      `M: ${false}, ` +
-      `m: ${false}, ` +
-      `G: ${false}`
-    )
-  }
-
-  inspectStatus(): string {
-    return `V: ${this.isVerticalBlankStarted}, S: ${false}, O: ${false}`
   }
 }
