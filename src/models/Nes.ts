@@ -16,26 +16,27 @@ export class Nes extends EventTarget {
 
   private _state: NesState = NesState.PoweredOff
   private _fps = 0
-  private workRam = new Ram(2048)
-  private videoRam = new Ram(2048)
-  private paletteRam = new Ram(32)
+
   private requestId: number | null = null
-  private cpuStallCycle: NesCycle = 0
   private fpsTimestamp = 0
   private fpsFrame = 0
+  private ppuSyncCycle: NesCycle = 0
 
   constructor() {
     super()
 
     const interruptController = new InterruptController()
+    const workRam = new Ram(2048)
+    const videoRam = new Ram(2048)
+    const paletteRam = new Ram(32)
 
     this.controller1 = new Controller()
     this.controller2 = new Controller()
 
-    this.ppuBus = new PpuBus(this.videoRam, this.paletteRam)
+    this.ppuBus = new PpuBus(videoRam, paletteRam)
     this.ppu = new Ppu(this.ppuBus, interruptController)
 
-    this.cpuBus = new CpuBus(this.workRam, this.ppu, this.controller1, this.controller2)
+    this.cpuBus = new CpuBus(workRam, this.ppu, this.controller1, this.controller2)
     this.cpu = new Cpu(this.cpuBus, interruptController)
   }
 
@@ -55,8 +56,8 @@ export class Nes extends EventTarget {
     return this.state === NesState.Running
   }
 
-  get isPaused(): boolean {
-    return this.state === NesState.Paused
+  get isStopped(): boolean {
+    return this.state === NesState.Stopped
   }
 
   set rom(rom: Rom) {
@@ -68,21 +69,38 @@ export class Nes extends EventTarget {
     this.ppu.videoRenderer = videoRenderer
   }
 
-  powerUp(): void {
+  powerUp(autorun = true): void {
     this.cpu.powerUp()
-    this.changeState(NesState.Running)
-    this.run()
+    this.ppu.powerUp()
+    this.reset()
+
+    if (autorun) {
+      this.run()
+    } else {
+      this.stop()
+    }
+  }
+
+  powerDown(): void {
+    this.stop()
+    this.changeState(NesState.PoweredOff)
   }
 
   reset(): void {
+    this._fps = 0
+    this.fpsTimestamp = 0
+    this.fpsFrame = 0
+    this.ppuSyncCycle = 0
+
     this.cpu.reset()
-    this.workRam.reset()
-    this.videoRam.reset()
-    this.paletteRam.reset()
+    this.ppu.reset()
   }
 
   run(): void {
+    if (!this.isRunning) this.changeState(NesState.Running)
+
     this.runFrame()
+    this.measureFps()
 
     this.requestId = requestAnimationFrame(() => this.run())
   }
@@ -92,38 +110,41 @@ export class Nes extends EventTarget {
       this.runCycle()
     } while (this.ppu.scanline > 0 || this.ppu.cycle > 0)
 
-    this.measureFps()
     this.dispatchEvent(new CustomEvent('frame'))
   }
 
-  pause(): void {
-    switch (this.state) {
-      case NesState.Running: {
-        this.changeState(NesState.Paused)
+  runScanline(): void {
+    const prevScanline = this.ppu.scanline
 
-        if (this.requestId) {
-          cancelAnimationFrame(this.requestId)
-        }
+    do {
+      this.runCycle()
+    } while (!(this.ppu.scanline !== prevScanline && this.ppu.cycle === 0))
 
-        break
-      }
-      case NesState.Paused: {
-        this.changeState(NesState.Running)
-        this.run()
-        break
-      }
-    }
+    this.dispatchEvent(new CustomEvent('step'))
+  }
+
+  runStep(): void {
+    do {
+      this.runCycle()
+    } while (this.ppuSyncCycle > 0 || this.cpu.isStall)
+
+    this.dispatchEvent(new CustomEvent('step'))
+  }
+
+  stop(): void {
+    if (this.requestId) cancelAnimationFrame(this.requestId)
+    this.changeState(NesState.Stopped)
   }
 
   private runCycle(): void {
-    if (this.cpuStallCycle === 0) {
+    if (this.ppuSyncCycle === 0) {
       this.cpu.runCycle()
-      this.cpuStallCycle = 3
+      this.ppuSyncCycle = 3
     }
 
     this.ppu.runCycle()
 
-    this.cpuStallCycle--
+    this.ppuSyncCycle--
   }
 
   private changeState(state: NesState): void {

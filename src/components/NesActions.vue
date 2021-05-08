@@ -14,18 +14,52 @@
     </div>
     <div class="control">
       <div class="buttons are-small has-addons">
-        <button class="button" :disabled="nesStatus.isPoweredOff" @click="handlePauseClick">
+        <button class="button" :title="isStopped ? 'Run' : 'Stop'" @click="handleRunOrStopClick">
           <span class="icon">
-            <font-awesome-icon v-if="nesStatus.isRunning" icon="pause" />
-            <font-awesome-icon v-else icon="play" />
+            <font-awesome-icon v-if="isStopped" icon="play" />
+            <font-awesome-icon v-else icon="stop" />
           </span>
         </button>
-        <button class="button" :disabled="!nesStatus.isPaused" @click="handleRunFrameClick">
+        <button
+          class="button"
+          title="Run Frame"
+          :disabled="nesStatus.isPoweredOff || !isStopped"
+          @click="handleRunFrameClick"
+        >
+          <span class="icon">
+            <font-awesome-icon icon="fast-forward" />
+          </span>
+        </button>
+        <button
+          class="button"
+          title="Run Scanline"
+          :disabled="nesStatus.isPoweredOff || !isStopped"
+          @click="handleRunScanlineClick"
+        >
           <span class="icon">
             <font-awesome-icon icon="step-forward" />
           </span>
         </button>
-        <button class="button" :disabled="nesStatus.isPoweredOff" @click="handleResetClick">
+        <button
+          class="button"
+          title="Run Step"
+          :disabled="nesStatus.isPoweredOff || !isStopped"
+          @click="handleRunStepClick"
+        >
+          <span class="icon">
+            <font-awesome-icon icon="chevron-right" />
+          </span>
+        </button>
+        <button
+          :class="['button', { 'is-success': !nesStatus.isPoweredOff }]"
+          title="Power Up/Down"
+          @click="handlePowerUpOrDownClick"
+        >
+          <span class="icon">
+            <font-awesome-icon icon="power-off" />
+          </span>
+        </button>
+        <button class="button" title="Reset" @click="handleResetClick">
           <span class="icon">
             <font-awesome-icon icon="redo-alt" />
           </span>
@@ -33,6 +67,7 @@
         <button
           :class="['button', { 'is-danger': isCanvasRecording }]"
           :disabled="nesStatus.isPoweredOff"
+          title="Record"
           @click="handleRecordClick"
         >
           <span class="icon">
@@ -42,6 +77,7 @@
         <button
           :class="['button', { 'is-success': debug }]"
           :disabled="nesStatus.isPoweredOff"
+          title="Debug"
           @click="handleDebugClick"
         >
           <span class="icon">
@@ -83,10 +119,11 @@ const { nes } = injectStrict(NesKey)
 const { debug, setDebug } = injectStrict(NesDebugKey)
 const { canvasScale, isCanvasRecording, recordCanvas, setCanvasScale } = injectStrict(NesCanvasKey)
 
+const isStopped = ref(false)
 const nesStatus = reactive({
   isPoweredOff: nes.isPoweredOff,
   isRunning: nes.isRunning,
-  isPaused: nes.isPaused,
+  isStopped: nes.isStopped,
 })
 const nesFps = ref('00.00')
 const romLabel = ref('Choose a ROM…')
@@ -103,24 +140,26 @@ const handleRomChange = (event: Event) => {
     if (!(reader.result instanceof ArrayBuffer)) return
 
     nes.rom = Rom.load(reader.result)
-
-    if (nes.isPoweredOff) {
-      nes.powerUp()
-    }
-
-    nes.reset()
+    nes.powerDown()
+    nes.powerUp(!isStopped.value)
   })
   reader.readAsArrayBuffer(file)
 
   romLabel.value = file.name
 }
 
-const handlePauseClick = (event: Event) => {
+const handleRunOrStopClick = (event: Event) => {
   if (!(event.currentTarget instanceof HTMLButtonElement)) return
 
   event.currentTarget.blur()
 
-  nes.pause()
+  if (isStopped.value) {
+    isStopped.value = false
+    nes.run()
+  } else {
+    isStopped.value = true
+    nes.stop()
+  }
 }
 
 const handleRunFrameClick = (event: Event) => {
@@ -129,6 +168,34 @@ const handleRunFrameClick = (event: Event) => {
   event.currentTarget.blur()
 
   nes.runFrame()
+}
+
+const handleRunScanlineClick = (event: Event) => {
+  if (!(event.currentTarget instanceof HTMLButtonElement)) return
+
+  event.currentTarget.blur()
+
+  nes.runScanline()
+}
+
+const handleRunStepClick = (event: Event) => {
+  if (!(event.currentTarget instanceof HTMLButtonElement)) return
+
+  event.currentTarget.blur()
+
+  nes.runStep()
+}
+
+const handlePowerUpOrDownClick = (event: Event) => {
+  if (!(event.currentTarget instanceof HTMLButtonElement)) return
+
+  event.currentTarget.blur()
+
+  if (nes.isPoweredOff) {
+    nes.powerUp(!isStopped.value)
+  } else {
+    nes.powerDown()
+  }
 }
 
 const handleResetClick = (event: Event) => {
@@ -168,7 +235,7 @@ const handleNesStateChange = (event: Event) => {
 
   nesStatus.isPoweredOff = event.currentTarget.isPoweredOff
   nesStatus.isRunning = event.currentTarget.isRunning
-  nesStatus.isPaused = event.currentTarget.isPaused
+  nesStatus.isStopped = event.currentTarget.isStopped
 }
 
 const handleNesFps = (event: Event) => {

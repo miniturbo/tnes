@@ -13,7 +13,11 @@ export class Ram {
     this.view[address] = data
   }
 
-  reset(): void {
-    this.view.fill(0)
+  fill(data: Uint8): void {
+    this.view.fill(data)
+  }
+
+  clear(): void {
+    this.fill(0)
   }
 }

@@ -21,10 +21,10 @@
 import type { CpuOperand } from '/@/types'
 import { computed, onActivated, onDeactivated, onMounted, ref } from 'vue'
 import { CpuAddressingMode } from '/@/types'
-import { bitFlag, combineIntoWord, injectStrict, maskAsWord, toHex, uint8ToInt8 } from '/@/utils'
+import { combineIntoWord, injectStrict, maskAsWord, toHex, uint8ToInt8 } from '/@/utils'
 import { NesKey } from '/@/composables/useNes'
+import { useVirtualList } from '/@/composables/useVirtualList'
 import { CpuInstructionSet } from '/@/models/Cpu'
-import { Nes } from '/@/models/Nes'
 
 type Row = {
   address: Uint16
@@ -33,33 +33,16 @@ type Row = {
 }
 
 const { nes } = injectStrict(NesKey)
+const { currentRow, maxRowsSize, setContainer, setBaseRow, setCurrentRow } = useVirtualList()
 
 const container = ref<HTMLDivElement | null>(null)
-const baseRow = ref<HTMLTrackElement | null>(null)
-const containerHeight = ref(0)
-const baseRowHeight = ref(0)
-const maxRows = computed(() => Math.floor((containerHeight.value - baseRowHeight.value) / baseRowHeight.value))
-const currentRow = ref(0)
-const rows = ref<Row[]>([])
+const baseRow = ref<HTMLTableRowElement | null>(null)
+const computedTimestamp = ref(performance.now())
+const rows = computed(() => {
+  // NOTE: re-compute at any time
+  computedTimestamp.value
 
-const handleWheel = (event: WheelEvent) => {
-  let next = currentRow.value + Math.floor(event.deltaY * 0.5)
-
-  if (next < 0x0000) {
-    next = 0x0000
-  }
-
-  if (next > 0xffff) {
-    next = 0xffff
-  }
-
-  currentRow.value = next
-}
-
-const handleFrame = (event: Event) => {
-  if (!(event.currentTarget instanceof Nes)) return
-
-  const newRows: Row[] = []
+  const rows: Row[] = []
 
   let address = currentRow.value
 
@@ -67,21 +50,19 @@ const handleFrame = (event: Event) => {
     let disassembly = ''
     let nextAddress = address + 1
 
-    if (bitFlag(event.currentTarget.cpuBus.cdl[address], 0)) {
-      const opcode = event.currentTarget.cpuBus.read(address)
+    if (nes.cpu.codeDataLogger.isCode(address)) {
+      const opcode = nes.cpuBus.read(address)
       const instruction = CpuInstructionSet.findByOpcode(opcode)
 
       let operand: CpuOperand = 0
+
       switch (instruction.byte) {
         case 2: {
-          operand = event.currentTarget.cpuBus.read(address + 1)
+          operand = nes.cpuBus.read(address + 1)
           break
         }
         case 3: {
-          operand = combineIntoWord(
-            event.currentTarget.cpuBus.read(address + 1),
-            event.currentTarget.cpuBus.read(address + 2)
-          )
+          operand = combineIntoWord(nes.cpuBus.read(address + 1), nes.cpuBus.read(address + 2))
           break
         }
       }
@@ -106,7 +87,7 @@ const handleFrame = (event: Event) => {
           break
         }
         case CpuAddressingMode.Relative: {
-          disassembly += ` ${toHex(maskAsWord(address + uint8ToInt8(operand)), 4)}`
+          disassembly += ` ${toHex(maskAsWord(address + 2 + uint8ToInt8(operand)), 4)}`
           break
         }
         case CpuAddressingMode.Absolute: {
@@ -137,36 +118,54 @@ const handleFrame = (event: Event) => {
       nextAddress = address + instruction.byte
     }
 
-    newRows.push({
+    rows.push({
       address,
       disassembly,
-      isCurrent: address === event.currentTarget.cpu.registers.programCounter,
+      isCurrent: address === nes.cpu.registers.programCounter,
     })
 
-    if (newRows.length === maxRows.value) {
-      break
-    }
+    if (rows.length >= maxRowsSize.value) break
 
     address = nextAddress
   }
 
-  rows.value = newRows
+  return rows
+})
+
+const updateComputedTimestamp = () => {
+  computedTimestamp.value = performance.now()
+}
+
+const handleWheel = (event: WheelEvent) => {
+  setCurrentRow(currentRow.value + Math.floor(event.deltaY * 0.5), 0xffff)
+}
+
+const handleFrame = () => {
+  updateComputedTimestamp()
+}
+
+const handleStep = () => {
+  setCurrentRow(nes.cpu.registers.programCounter - Math.floor(maxRowsSize.value / 2), 0xffff)
+  updateComputedTimestamp()
 }
 
 onMounted(() => {
   if (!container.value || !baseRow.value) return
-  containerHeight.value = container.value.clientHeight
-  baseRowHeight.value = baseRow.value.clientHeight
+  setContainer(container.value)
+  setBaseRow(baseRow.value)
 })
 
 onActivated(() => {
-  currentRow.value = nes.cpu.registers.programCounter
+  setCurrentRow(nes.cpu.registers.programCounter - Math.floor(maxRowsSize.value / 2), 0xffff)
+  updateComputedTimestamp()
 
   nes.addEventListener('frame', handleFrame)
+  nes.addEventListener('step', handleStep)
 })
 
 onDeactivated(() => {
   nes.removeEventListener('frame', handleFrame)
+  nes.removeEventListener('step', handleStep)
 })
 </script>
 

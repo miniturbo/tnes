@@ -79,10 +79,14 @@ const renderPalettes = (context: CanvasRenderingContext2D): void => {
   }
 }
 
-const handleFrame = () => {
+const render = () => {
   if (!context.value) return
   renderPatterns(context.value)
   renderPalettes(context.value)
+}
+
+const handleFrameOrStep = () => {
+  render()
 }
 
 onMounted(() => {
@@ -93,11 +97,15 @@ onMounted(() => {
 })
 
 onActivated(() => {
-  nes.addEventListener('frame', handleFrame)
+  render()
+
+  nes.addEventListener('frame', handleFrameOrStep)
+  nes.addEventListener('step', handleFrameOrStep)
 })
 
 onDeactivated(() => {
-  nes.removeEventListener('frame', handleFrame)
+  nes.removeEventListener('frame', handleFrameOrStep)
+  nes.removeEventListener('step', handleFrameOrStep)
 })
 </script>
 

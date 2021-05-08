@@ -14,218 +14,292 @@ import {
   setBitFlag,
 } from '/@/utils'
 import { Bus } from '/@/models/Cpu/Bus'
+import { CodeDataLogger } from '/@/models/Cpu/CodeDataLogger'
 import { Instruction } from '/@/models/Cpu/Instruction'
 import { Operands } from '/@/models/Cpu/Operands'
 import { Registers } from '/@/models/Cpu/Registers'
 
 export class Executor {
-  constructor(private bus: Bus, private registers: Registers) {}
+  constructor(private bus: Bus, private registers: Registers, private codeDataLogger: CodeDataLogger) {}
 
   handleNmi(): void {
     this.pushWordToStack(this.registers.programCounter)
     this.pushByteToStack(this.registers.status)
+
     this.registers.programCounter = combineIntoWord(this.bus.read(0xfffa), this.bus.read(0xfffb))
+
+    this.codeDataLogger.logAsCode(this.registers.programCounter)
   }
 
   // see: http://obelisk.me.uk/6502/reference.html
   execute(instruction: Instruction, operands: Operands): CpuCycle {
+    let additionalCycle: CpuCycle
+
     switch (instruction.type) {
       case CpuInstructionType.Adc: {
-        return this.executeAdc(operands, instruction.addressingMode)
+        additionalCycle = this.executeAdc(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.And: {
-        return this.executeAnd(operands, instruction.addressingMode)
+        additionalCycle = this.executeAnd(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Asl: {
-        return this.executeAsl(operands, instruction.addressingMode)
+        additionalCycle = this.executeAsl(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Bcc: {
-        return this.executeBcc(operands)
+        additionalCycle = this.executeBcc(operands)
+        break
       }
       case CpuInstructionType.Bcs: {
-        return this.executeBcs(operands)
+        additionalCycle = this.executeBcs(operands)
+        break
       }
       case CpuInstructionType.Beq: {
-        return this.executeBeq(operands)
+        additionalCycle = this.executeBeq(operands)
+        break
       }
       case CpuInstructionType.Bit: {
-        return this.executeBit(operands)
+        additionalCycle = this.executeBit(operands)
+        break
       }
       case CpuInstructionType.Bmi: {
-        return this.executeBmi(operands)
+        additionalCycle = this.executeBmi(operands)
+        break
       }
       case CpuInstructionType.Bne: {
-        return this.executeBne(operands)
+        additionalCycle = this.executeBne(operands)
+        break
       }
       case CpuInstructionType.Bpl: {
-        return this.executeBpl(operands)
+        additionalCycle = this.executeBpl(operands)
+        break
       }
       case CpuInstructionType.Brk: {
-        return this.executeBrk()
+        additionalCycle = this.executeBrk()
+        break
       }
       case CpuInstructionType.Bvc: {
-        return this.executeBvc(operands)
+        additionalCycle = this.executeBvc(operands)
+        break
       }
       case CpuInstructionType.Bvs: {
-        return this.executeBvs(operands)
+        additionalCycle = this.executeBvs(operands)
+        break
       }
       case CpuInstructionType.Clc: {
-        return this.executeClc()
+        additionalCycle = this.executeClc()
+        break
       }
       case CpuInstructionType.Cld: {
-        return this.executeCld()
+        additionalCycle = this.executeCld()
+        break
       }
       case CpuInstructionType.Cli: {
-        return this.executeCli()
+        additionalCycle = this.executeCli()
+        break
       }
       case CpuInstructionType.Clv: {
-        return this.executeClv()
+        additionalCycle = this.executeClv()
+        break
       }
       case CpuInstructionType.Cmp: {
-        return this.executeCmp(operands, instruction.addressingMode)
+        additionalCycle = this.executeCmp(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Cpx: {
-        return this.executeCpx(operands, instruction.addressingMode)
+        additionalCycle = this.executeCpx(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Cpy: {
-        return this.executeCpy(operands, instruction.addressingMode)
+        additionalCycle = this.executeCpy(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Dcp: {
-        return this.executeDcp(operands, instruction.addressingMode)
+        additionalCycle = this.executeDcp(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Dec: {
-        return this.executeDec(operands)
+        additionalCycle = this.executeDec(operands)
+        break
       }
       case CpuInstructionType.Dex: {
-        return this.executeDex()
+        additionalCycle = this.executeDex()
+        break
       }
       case CpuInstructionType.Dey: {
-        return this.executeDey()
+        additionalCycle = this.executeDey()
+        break
       }
       case CpuInstructionType.Eor: {
-        return this.executeEor(operands, instruction.addressingMode)
+        additionalCycle = this.executeEor(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Inc: {
-        return this.executeInc(operands)
+        additionalCycle = this.executeInc(operands)
+        break
       }
       case CpuInstructionType.Inx: {
-        return this.executeInx()
+        additionalCycle = this.executeInx()
+        break
       }
       case CpuInstructionType.Iny: {
-        return this.executeIny()
+        additionalCycle = this.executeIny()
+        break
       }
       case CpuInstructionType.Isb: {
-        return this.executeIsb(operands, instruction.addressingMode)
+        additionalCycle = this.executeIsb(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Jmp: {
-        return this.executeJmp(operands)
+        additionalCycle = this.executeJmp(operands)
+        break
       }
       case CpuInstructionType.Jsr: {
-        return this.executeJsr(operands)
+        additionalCycle = this.executeJsr(operands)
+        break
       }
       case CpuInstructionType.Lax: {
-        return this.executeLax(operands, instruction.addressingMode)
+        additionalCycle = this.executeLax(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Lda: {
-        return this.executeLda(operands, instruction.addressingMode)
+        additionalCycle = this.executeLda(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Ldx: {
-        return this.executeLdx(operands, instruction.addressingMode)
+        additionalCycle = this.executeLdx(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Ldy: {
-        return this.executeLdy(operands, instruction.addressingMode)
+        additionalCycle = this.executeLdy(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Lsr: {
-        return this.executeLsr(operands, instruction.addressingMode)
+        additionalCycle = this.executeLsr(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Nop: {
-        return this.executeNop(operands)
+        additionalCycle = this.executeNop(operands)
+        break
       }
       case CpuInstructionType.Ora: {
-        return this.executeOra(operands, instruction.addressingMode)
+        additionalCycle = this.executeOra(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Pha: {
-        return this.executePha()
+        additionalCycle = this.executePha()
+        break
       }
       case CpuInstructionType.Php: {
-        return this.executePhp()
+        additionalCycle = this.executePhp()
+        break
       }
       case CpuInstructionType.Pla: {
-        return this.executePla()
+        additionalCycle = this.executePla()
+        break
       }
       case CpuInstructionType.Plp: {
-        return this.executePlp()
+        additionalCycle = this.executePlp()
+        break
       }
       case CpuInstructionType.Rla: {
-        return this.executeRla(operands, instruction.addressingMode)
+        additionalCycle = this.executeRla(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Rol: {
-        return this.executeRol(operands, instruction.addressingMode)
+        additionalCycle = this.executeRol(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Ror: {
-        return this.executeRor(operands, instruction.addressingMode)
+        additionalCycle = this.executeRor(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Rra: {
-        return this.executeRra(operands, instruction.addressingMode)
+        additionalCycle = this.executeRra(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Rti: {
-        return this.executeRti()
+        additionalCycle = this.executeRti()
+        break
       }
       case CpuInstructionType.Rts: {
-        return this.executeRts()
+        additionalCycle = this.executeRts()
+        break
       }
       case CpuInstructionType.Sax: {
-        return this.executeSax(operands)
+        additionalCycle = this.executeSax(operands)
+        break
       }
       case CpuInstructionType.Sbc: {
-        return this.executeSbc(operands, instruction.addressingMode)
+        additionalCycle = this.executeSbc(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Sec: {
-        return this.executeSec()
+        additionalCycle = this.executeSec()
+        break
       }
       case CpuInstructionType.Sed: {
-        return this.executeSed()
+        additionalCycle = this.executeSed()
+        break
       }
       case CpuInstructionType.Sei: {
-        return this.executeSei()
+        additionalCycle = this.executeSei()
+        break
       }
       case CpuInstructionType.Slo: {
-        return this.executeSlo(operands, instruction.addressingMode)
+        additionalCycle = this.executeSlo(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Sre: {
-        return this.executeSre(operands, instruction.addressingMode)
+        additionalCycle = this.executeSre(operands, instruction.addressingMode)
+        break
       }
       case CpuInstructionType.Sta: {
-        return this.executeSta(operands)
+        additionalCycle = this.executeSta(operands)
+        break
       }
       case CpuInstructionType.Stx: {
-        return this.executeStx(operands)
+        additionalCycle = this.executeStx(operands)
+        break
       }
       case CpuInstructionType.Sty: {
-        return this.executeSty(operands)
+        additionalCycle = this.executeSty(operands)
+        break
       }
       case CpuInstructionType.Tax: {
-        return this.executeTax()
+        additionalCycle = this.executeTax()
+        break
       }
       case CpuInstructionType.Tay: {
-        return this.executeTay()
+        additionalCycle = this.executeTay()
+        break
       }
       case CpuInstructionType.Tsx: {
-        return this.executeTsx()
+        additionalCycle = this.executeTsx()
+        break
       }
       case CpuInstructionType.Txa: {
-        return this.executeTxa()
+        additionalCycle = this.executeTxa()
+        break
       }
       case CpuInstructionType.Txs: {
-        return this.executeTxs()
+        additionalCycle = this.executeTxs()
+        break
       }
       case CpuInstructionType.Tya: {
-        return this.executeTya()
+        additionalCycle = this.executeTya()
+        break
       }
       default: {
         throw new UnknownInstructionTypeError(instruction.type)
       }
     }
+
+    this.codeDataLogger.logAsCode(this.registers.programCounter)
+
+    return additionalCycle
   }
 
   // see: http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html

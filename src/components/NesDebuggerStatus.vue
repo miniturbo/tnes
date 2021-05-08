@@ -66,7 +66,7 @@ const ppuStatus = reactive({
   writeToggle: false,
 })
 
-const handleFrame = () => {
+const handleFrameOrStep = () => {
   cpuStatus.programCounter = nes.cpu.registers.programCounter
   cpuStatus.stackPointer = nes.cpu.registers.stackPointer
   cpuStatus.accumulator = nes.cpu.registers.accumulator
@@ -91,11 +91,13 @@ const handleFrame = () => {
 }
 
 onMounted(() => {
-  nes.addEventListener('frame', handleFrame)
+  nes.addEventListener('frame', handleFrameOrStep)
+  nes.addEventListener('step', handleFrameOrStep)
 })
 
 onUnmounted(() => {
-  nes.removeEventListener('frame', handleFrame)
+  nes.removeEventListener('frame', handleFrameOrStep)
+  nes.removeEventListener('step', handleFrameOrStep)
 })
 </script>
 

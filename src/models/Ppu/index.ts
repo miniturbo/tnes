@@ -19,6 +19,7 @@ export class Ppu {
 
   private _scanline: PpuScanline = 0
   private _cycle: PpuCycle = 0
+
   private latches = new Latches()
   private shiftRegisters = new ShiftRegisters()
 
@@ -74,6 +75,40 @@ export class Ppu {
 
   private get onLoadCycle(): boolean {
     return ((this.cycle >= 9 && this.cycle <= 257) || (this.cycle >= 329 && this.cycle <= 337)) && this.cycle % 8 === 1
+  }
+
+  powerUp(): void {
+    this.registers.controller = maskAsByte(0x00)
+    this.registers.mask = maskAsByte(0x00)
+    this.registers.status = maskAsByte(0x00)
+    this.registers.currentVideoRamAddress = maskAsWord(0x0000)
+    this.registers.temporaryVideoRamAddress = maskAsWord(0x0000)
+    this.registers.writeToggle = false
+
+    this.latches.nameTable = maskAsByte(0x00)
+    this.latches.attributeTableLow = maskAsByte(0x00)
+    this.latches.attributeTableHigh = maskAsByte(0x00)
+    this.latches.patternTableLow = maskAsByte(0x00)
+    this.latches.patternTableHigh = maskAsByte(0x00)
+
+    this.shiftRegisters.attributeTableLow = maskAsWord(0x0000)
+    this.shiftRegisters.attributeTableHigh = maskAsWord(0x0000)
+    this.shiftRegisters.patternTableLow = maskAsWord(0x0000)
+    this.shiftRegisters.patternTableHigh = maskAsWord(0x0000)
+
+    this.bus.videoRam.clear()
+    this.bus.paletteRam.fill(0x3f)
+  }
+
+  reset(): void {
+    this._scanline = 0
+    this._cycle = 0
+
+    this.registers.controller = maskAsByte(0x00)
+    this.registers.mask = maskAsByte(0x00)
+    this.registers.currentVideoRamAddress = maskAsWord(0x0000)
+    this.registers.temporaryVideoRamAddress = maskAsWord(0x0000)
+    this.registers.writeToggle = false
   }
 
   // see: http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png
