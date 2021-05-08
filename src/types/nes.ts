@@ -6,7 +6,7 @@ export type NesCycle = number
 export const NesState = {
   PoweredOff: 'PoweredOff',
   Running: 'Running',
-  Paused: 'Paused',
+  Stopped: 'Stopped',
 } as const
 
 export type NesDumper = {

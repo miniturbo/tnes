@@ -5,7 +5,7 @@ import { Rom } from '/@/models/Rom'
 export class Bus {
   rom: Rom | null = null
 
-  constructor(private videoRam: Ram, private paletteRam: Ram) {}
+  constructor(readonly videoRam: Ram, readonly paletteRam: Ram) {}
 
   read(address: Uint16): Uint8 {
     if (address >= 0x0000 && address <= 0x1fff) {

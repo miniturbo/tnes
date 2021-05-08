@@ -4,25 +4,17 @@ import { Ppu } from '/@/models/Ppu'
 import { Ram } from '/@/models/Ram'
 import { Rom } from '/@/models/Rom'
 
-export class Bus extends EventTarget {
+export class Bus {
   rom: Rom | null = null
 
-  readonly cdl = new Uint8Array(0xffff)
-
   constructor(
-    private workRam: Ram,
+    readonly workRam: Ram,
     private ppu: Ppu,
     private controller1: Controller,
     private controller2: Controller
-  ) {
-    super()
-  }
+  ) {}
 
-  read(address: Uint16, { isOpcode } = { isOpcode: false }): Uint8 {
-    if (isOpcode) {
-      this.cdl[address] = 0b1
-    }
-
+  read(address: Uint16): Uint8 {
     if (address >= 0x0000 && address <= 0x1fff) {
       return this.workRam.read(address & 0x07ff)
     } else if (address >= 0x2000 && address <= 0x3fff) {
@@ -61,7 +53,5 @@ export class Bus extends EventTarget {
     } else {
       throw new BadAddressError(address)
     }
-
-    this.cdl[address] = 0b0
   }
 }

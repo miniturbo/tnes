@@ -1,6 +1,7 @@
 import { CpuCycle, NesDumper } from '/@/types'
 import { combineIntoWord, maskAsByte, maskAsWord } from '/@/utils'
 import { Bus } from '/@/models/Cpu/Bus'
+import { CodeDataLogger } from '/@/models/Cpu/CodeDataLogger'
 import { Decoder } from '/@/models/Cpu/Decoder'
 import { Executor } from '/@/models/Cpu/Executor'
 import { Fetcher } from '/@/models/Cpu/Fetcher'
@@ -22,10 +23,11 @@ export class Cpu {
   dumper: NesDumper | null = null
 
   readonly registers = new Registers()
+  readonly codeDataLogger = new CodeDataLogger(0xffff)
 
   private fetcher = new Fetcher(this.bus, this.registers)
-  private decoder = new Decoder(this.bus, this.registers)
-  private executor = new Executor(this.bus, this.registers)
+  private decoder = new Decoder(this.bus, this.registers, this.codeDataLogger)
+  private executor = new Executor(this.bus, this.registers, this.codeDataLogger)
   private stallCycle: CpuCycle = 0
 
   constructor(private bus: Bus, private interruptController: InterruptController) {}
@@ -35,21 +37,28 @@ export class Cpu {
   }
 
   powerUp(): void {
+    this.stallCycle = 0
+
     this.registers.programCounter = maskAsWord(0x0000)
     this.registers.stackPointer = maskAsByte(0x00)
     this.registers.accumulator = maskAsByte(0x00)
     this.registers.indexX = maskAsByte(0x00)
     this.registers.indexY = maskAsByte(0x00)
+    this.registers.status = maskAsByte(0x00)
     this.registers.breakCommandFlag = true
     this.registers.reservedFlag = true
 
-    this.reset()
+    this.bus.workRam.clear()
+
+    this.codeDataLogger.clear()
   }
 
   reset(): void {
     this.registers.programCounter = combineIntoWord(this.bus.read(0xfffc), this.bus.read(0xfffd))
     this.registers.stackPointer = maskAsByte(this.registers.stackPointer - 3)
     this.registers.interruptDisableFlag = true
+
+    this.codeDataLogger.logAsCode(this.registers.programCounter)
 
     this.stallCycle = 7
 

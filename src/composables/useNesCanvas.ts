@@ -10,9 +10,9 @@ export type NesCanvasScale = typeof NesCanvasScale[keyof typeof NesCanvasScale]
 type NesCanvasType = {
   canvasScale: Ref<NesCanvasScale>
   isCanvasRecording: Ref<boolean>
-  recordCanvas: () => void
   setCanvas: (value: HTMLCanvasElement) => void
   setCanvasScale: (value: NesCanvasScale) => void
+  recordCanvas: () => void
 }
 
 export const useNesCanvas = (): NesCanvasType => {
@@ -58,9 +58,9 @@ export const useNesCanvas = (): NesCanvasType => {
   return {
     canvasScale,
     isCanvasRecording,
-    recordCanvas,
     setCanvas,
     setCanvasScale,
+    recordCanvas,
   }
 }
 

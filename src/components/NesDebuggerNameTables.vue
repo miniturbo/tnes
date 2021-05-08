@@ -70,9 +70,13 @@ const renderNameTables = (context: CanvasRenderingContext2D): void => {
   context.putImageData(imageData, 0, 0)
 }
 
-const handleFrame = () => {
+const render = () => {
   if (!context.value) return
   renderNameTables(context.value)
+}
+
+const handleFrameOrStep = () => {
+  render()
 }
 
 onMounted(() => {
@@ -83,11 +87,15 @@ onMounted(() => {
 })
 
 onActivated(() => {
-  nes.addEventListener('frame', handleFrame)
+  render()
+
+  nes.addEventListener('frame', handleFrameOrStep)
+  nes.addEventListener('step', handleFrameOrStep)
 })
 
 onDeactivated(() => {
-  nes.removeEventListener('frame', handleFrame)
+  nes.removeEventListener('frame', handleFrameOrStep)
+  nes.removeEventListener('step', handleFrameOrStep)
 })
 </script>
 

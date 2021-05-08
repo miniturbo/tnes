@@ -2,11 +2,12 @@ import { CpuAddressingMode } from '/@/types'
 import { UnknownAddressingModeError } from '/@/errors'
 import { combineIntoWord, isPageCrossed, maskAsByte, maskAsWord, uint8ToInt8 } from '/@/utils'
 import { Bus } from '/@/models/Cpu/Bus'
+import { CodeDataLogger } from '/@/models/Cpu/CodeDataLogger'
 import { Operands } from '/@/models/Cpu/Operands'
 import { Registers } from '/@/models/Cpu/Registers'
 
 export class Decoder {
-  constructor(private bus: Bus, private registers: Registers) {}
+  constructor(private bus: Bus, private registers: Registers, private codeDataLogger: CodeDataLogger) {}
 
   decode(addressingMode: CpuAddressingMode): Operands {
     switch (addressingMode) {
@@ -135,6 +136,7 @@ export class Decoder {
   private fetchByte(): Uint8 {
     const byte = this.bus.read(this.registers.programCounter)
 
+    this.codeDataLogger.logAsData(this.registers.programCounter)
     this.registers.advanceProgramCounter()
 
     return byte
@@ -143,10 +145,12 @@ export class Decoder {
   private fetchWord(): Uint16 {
     const lowByte = this.bus.read(this.registers.programCounter)
 
+    this.codeDataLogger.logAsData(this.registers.programCounter)
     this.registers.advanceProgramCounter()
 
     const highByte = this.bus.read(this.registers.programCounter)
 
+    this.codeDataLogger.logAsData(this.registers.programCounter)
     this.registers.advanceProgramCounter()
 
     return combineIntoWord(lowByte, highByte)

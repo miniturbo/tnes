@@ -42,6 +42,10 @@ describe('Cpu', () => {
       ppu.dumper = nestestDumper
 
       cpu.powerUp()
+      ppu.powerUp()
+      cpu.reset()
+      ppu.reset()
+
       cpu['registers'].programCounter = 0xc000
       cpu['registers'].status = 0x24
 
