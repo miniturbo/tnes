@@ -1,5 +1,12 @@
-import { CpuAddressingMode, CpuCycle, CpuInstructionType } from '/@/types'
-import { UnknownInstructionTypeError } from '/@/errors'
+import { EventEmitter } from 'events'
+import { UnknownAddressingModeError, UnknownInstructionTypeError } from '@/errors'
+import { CpuBus } from '@/models/Cpu/CpuBus'
+import { CpuRegisters } from '@/models/Cpu/CpuRegisters'
+import { Instruction } from '@/models/Cpu/Instruction'
+import { InstructionSet } from '@/models/Cpu/InstructionSet'
+import { Operands } from '@/models/Cpu/Operands'
+import { Ram } from '@/models/Ram'
+import { CpuAddressingMode, CpuCycle, CpuInstructionType } from '@/types'
 import {
   bitFlag,
   combineIntoWord,
@@ -8,33 +15,242 @@ import {
   isCarry,
   isNegative,
   isOverflow,
+  isPageCrossed,
   isZero,
   maskAsByte,
   maskAsWord,
   setBitFlag,
-} from '/@/utils'
-import { Bus } from '/@/models/Cpu/Bus'
-import { CodeDataLogger } from '/@/models/Cpu/CodeDataLogger'
-import { Instruction } from '/@/models/Cpu/Instruction'
-import { Operands } from '/@/models/Cpu/Operands'
-import { Registers } from '/@/models/Cpu/Registers'
+  uint8ToInt8,
+} from '@/utils'
 
-export class Executor {
-  constructor(private bus: Bus, private registers: Registers, private codeDataLogger: CodeDataLogger) {}
+export class Cpu extends EventEmitter {
+  readonly bus = new CpuBus()
+  readonly registers = new CpuRegisters()
 
-  handleNmi(): void {
+  private workRam = new Ram(2048)
+  private stallCycle: CpuCycle = 0
+
+  constructor() {
+    super()
+
+    this.bus.workRam = this.workRam
+  }
+
+  get isStall(): boolean {
+    return this.stallCycle > 0
+  }
+
+  powerUp(): void {
+    this.stallCycle = 0
+
+    this.registers.programCounter = 0x0000
+    this.registers.stackPointer = 0x00
+    this.registers.accumulator = 0x00
+    this.registers.indexX = 0x00
+    this.registers.indexY = 0x00
+    this.registers.status = 0x00
+    this.registers.breakCommandFlag = true
+    this.registers.reservedFlag = true
+
+    this.workRam.clear()
+  }
+
+  reset(): void {
+    this.registers.programCounter = combineIntoWord(this.bus.read(0xfffc), this.bus.read(0xfffd))
+    this.registers.stackPointer = maskAsByte(this.registers.stackPointer - 3)
+    this.registers.interruptDisableFlag = true
+
+    this.stallCycle = 7
+
+    this.emit('reset', this.stallCycle)
+  }
+
+  runNmi(): void {
     this.pushWordToStack(this.registers.programCounter)
     this.pushByteToStack(this.registers.status)
 
     this.registers.programCounter = combineIntoWord(this.bus.read(0xfffa), this.bus.read(0xfffb))
 
-    this.codeDataLogger.logAsCode(this.registers.programCounter)
+    this.stallCycle += 7
+  }
+
+  runCycle(): void {
+    if (this.isStall) {
+      this.stallCycle--
+      return
+    }
+
+    const instruction = this.fetch()
+    const operands = this.decode(instruction.addressingMode)
+    const cycle = this.execute(instruction, operands)
+
+    this.stallCycle += cycle - 1
+  }
+
+  stall(cycle: CpuCycle): void {
+    this.stallCycle += cycle
+  }
+
+  private fetch(): Instruction {
+    this.emit('beforefetch')
+
+    const opcode = this.fetchByte()
+    const instruction = InstructionSet.findByOpcode(opcode)
+
+    this.emit('afterfetch', instruction)
+
+    return instruction
+  }
+
+  private decode(addressingMode: CpuAddressingMode): Operands {
+    this.emit('beforedecode')
+
+    let operands
+    switch (addressingMode) {
+      case CpuAddressingMode.Implicit: {
+        operands = this.decodeByImplicit()
+        break
+      }
+      case CpuAddressingMode.Accumulator: {
+        operands = this.decodeByAccumulator()
+        break
+      }
+      case CpuAddressingMode.Immediate: {
+        operands = this.decodeByImmediate()
+        break
+      }
+      case CpuAddressingMode.ZeroPage: {
+        operands = this.decodeByZeroPage()
+        break
+      }
+      case CpuAddressingMode.ZeroPageX: {
+        operands = this.decodeByZeroPageX()
+        break
+      }
+      case CpuAddressingMode.ZeroPageY: {
+        operands = this.decodeByZeroPageY()
+        break
+      }
+      case CpuAddressingMode.Relative: {
+        operands = this.decodeByRelative()
+        break
+      }
+      case CpuAddressingMode.Absolute: {
+        operands = this.decodeByAbsolute()
+        break
+      }
+      case CpuAddressingMode.AbsoluteX: {
+        operands = this.decodeByAbsoluteX()
+        break
+      }
+      case CpuAddressingMode.AbsoluteY: {
+        operands = this.decodeByAbsoluteY()
+        break
+      }
+      case CpuAddressingMode.Indirect: {
+        operands = this.decodeByIndirect()
+        break
+      }
+      case CpuAddressingMode.IndexedIndirect: {
+        operands = this.decodeByIndexedIndirect()
+        break
+      }
+      case CpuAddressingMode.IndirectIndexed: {
+        operands = this.decodeByIndirectIndexed()
+        break
+      }
+      default: {
+        throw new UnknownAddressingModeError(addressingMode)
+      }
+    }
+
+    this.emit('afterdecode', operands)
+
+    return operands
+  }
+
+  private decodeByImplicit(): Operands {
+    return new Operands([], false)
+  }
+
+  private decodeByAccumulator(): Operands {
+    return new Operands([], false)
+  }
+
+  private decodeByImmediate(): Operands {
+    return new Operands([this.fetchByte()], false)
+  }
+
+  private decodeByZeroPage(): Operands {
+    return new Operands([this.fetchByte()], false)
+  }
+
+  private decodeByZeroPageX(): Operands {
+    const operand1 = this.fetchByte()
+    const operand2 = maskAsByte(operand1 + this.registers.indexX)
+    return new Operands([operand1, operand2], false)
+  }
+
+  private decodeByZeroPageY(): Operands {
+    const operand1 = this.fetchByte()
+    const operand2 = maskAsByte(operand1 + this.registers.indexY)
+    return new Operands([operand1, operand2], false)
+  }
+
+  private decodeByRelative(): Operands {
+    const operand1 = this.fetchByte()
+    const operand2 = maskAsWord(this.registers.programCounter + uint8ToInt8(operand1))
+    return new Operands([operand1, operand2], isPageCrossed(this.registers.programCounter, operand2))
+  }
+
+  private decodeByAbsolute(): Operands {
+    return new Operands([this.fetchWord()], false)
+  }
+
+  private decodeByAbsoluteX(): Operands {
+    const operand1 = this.fetchWord()
+    const operand2 = maskAsWord(operand1 + this.registers.indexX)
+    return new Operands([operand1, operand2], isPageCrossed(operand1, operand2))
+  }
+
+  private decodeByAbsoluteY(): Operands {
+    const operand1 = this.fetchWord()
+    const operand2 = maskAsWord(operand1 + this.registers.indexY)
+    return new Operands([operand1, operand2], isPageCrossed(operand1, operand2))
+  }
+
+  // see: http://www.6502.org/tutorials/6502opcodes.html#JMP
+  private decodeByIndirect(): Operands {
+    const operand1 = this.fetchWord()
+    const lowByte = this.bus.read(operand1)
+    const highByte = this.bus.read((operand1 & 0xff00) | ((operand1 + 0x1) & 0xff))
+    const operand2 = combineIntoWord(lowByte, highByte)
+    return new Operands([operand1, operand2], false)
+  }
+
+  private decodeByIndexedIndirect(): Operands {
+    const operand1 = this.fetchByte()
+    const operand2 = maskAsByte(operand1 + this.registers.indexX)
+    const lowByte = this.bus.read(operand2)
+    const highByte = this.bus.read(maskAsByte(operand2 + 0x1))
+    const operand3 = combineIntoWord(lowByte, highByte)
+    return new Operands([operand1, operand2, operand3], false)
+  }
+
+  private decodeByIndirectIndexed(): Operands {
+    const operand1 = this.fetchByte()
+    const lowByte = this.bus.read(maskAsByte(operand1))
+    const highByte = this.bus.read(maskAsByte(operand1 + 0x1))
+    const operand2 = combineIntoWord(lowByte, highByte)
+    const operand3 = maskAsWord(operand2 + this.registers.indexY)
+    return new Operands([operand1, operand2, operand3], isPageCrossed(operand2, operand3))
   }
 
   // see: http://obelisk.me.uk/6502/reference.html
-  execute(instruction: Instruction, operands: Operands): CpuCycle {
-    let additionalCycle: CpuCycle
+  private execute(instruction: Instruction, operands: Operands): CpuCycle {
+    this.emit('beforeexecute')
 
+    let additionalCycle: CpuCycle
     switch (instruction.type) {
       case CpuInstructionType.Adc: {
         additionalCycle = this.executeAdc(operands, instruction.addressingMode)
@@ -297,9 +513,11 @@ export class Executor {
       }
     }
 
-    this.codeDataLogger.logAsCode(this.registers.programCounter)
+    const cycle = instruction.cycle + additionalCycle
 
-    return additionalCycle
+    this.emit('afterexecute', cycle)
+
+    return cycle
   }
 
   // see: http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
@@ -867,6 +1085,26 @@ export class Executor {
     this.registers.negativeFlag = isNegative(this.registers.indexY)
     this.registers.accumulator = maskAsByte(this.registers.indexY)
     return 0
+  }
+
+  private fetchByte(): Uint8 {
+    const byte = this.bus.read(this.registers.programCounter)
+
+    this.registers.advanceProgramCounter()
+
+    return byte
+  }
+
+  private fetchWord(): Uint16 {
+    const lowByte = this.bus.read(this.registers.programCounter)
+
+    this.registers.advanceProgramCounter()
+
+    const highByte = this.bus.read(this.registers.programCounter)
+
+    this.registers.advanceProgramCounter()
+
+    return combineIntoWord(lowByte, highByte)
   }
 
   private pushByteToStack(data: Uint8): void {

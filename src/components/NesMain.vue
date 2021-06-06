@@ -6,6 +6,6 @@
 </template>
 
 <script setup lang="ts">
-import NesActions from '/@/components/NesActions.vue'
-import NesCanvas from '/@/components/NesCanvas.vue'
+import NesActions from '@/components/NesActions.vue'
+import NesCanvas from '@/components/NesCanvas.vue'
 </script>

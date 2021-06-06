@@ -1,6 +1,6 @@
 import { Memoize } from 'typescript-memoize'
-import { CpuOperand } from '/@/types'
-import { divideIntoBytes, validateNonNullable } from '/@/utils'
+import { CpuOperand } from '@/types'
+import { divideIntoBytes, validateNonNullable } from '@/utils'
 
 export class Operands {
   constructor(private operands: CpuOperand[], readonly isPageCrossed: boolean) {}

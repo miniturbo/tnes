@@ -15,14 +15,14 @@
 </template>
 
 <script setup lang="ts">
-import { injectStrict } from '/@/utils'
-import NesDebuggerPatternsAndPalettes from '/@/components/NesDebuggerPatternsAndPalettes.vue'
-import NesDebuggerNameTables from '/@/components/NesDebuggerNameTables.vue'
-import NesDebuggerCpuBus from '/@/components/NesDebuggerCpuBus.vue'
-import NesDebuggerPpuBus from '/@/components/NesDebuggerPpuBus.vue'
-import NesDebuggerDisassembly from '/@/components/NesDebuggerDisassembly.vue'
-import NesDebuggerStatus from '/@/components/NesDebuggerStatus.vue'
-import { DebugMode, NesDebugKey } from '/@/composables/useNesDebug'
+import NesDebuggerCpuBus from '@/components/NesDebuggerCpuBus.vue'
+import NesDebuggerDisassembly from '@/components/NesDebuggerDisassembly.vue'
+import NesDebuggerNameTables from '@/components/NesDebuggerNameTables.vue'
+import NesDebuggerPatternsAndPalettes from '@/components/NesDebuggerPatternsAndPalettes.vue'
+import NesDebuggerPpuBus from '@/components/NesDebuggerPpuBus.vue'
+import NesDebuggerStatus from '@/components/NesDebuggerStatus.vue'
+import { DebugMode, NesDebugKey } from '@/composables/useNesDebug'
+import { injectStrict } from '@/utils'
 
 const { debugMode, setDebugMode } = injectStrict(NesDebugKey)
 

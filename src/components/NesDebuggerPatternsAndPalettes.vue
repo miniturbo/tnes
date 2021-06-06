@@ -6,8 +6,8 @@
 
 <script setup lang="ts">
 import { onActivated, onDeactivated, onMounted, ref } from 'vue'
-import { bitOf, injectStrict } from '/@/utils'
-import { NesKey } from '/@/composables/useNes'
+import { NesKey } from '@/composables/useNes'
+import { bitOf, injectStrict } from '@/utils'
 
 const { nes } = injectStrict(NesKey)
 
@@ -46,8 +46,8 @@ const renderPattern = (
 
   for (let fineY = 0; fineY < 8; fineY++) {
     const nameTable = nameTableOffset + coarseY * 16 + coarseX
-    const patternTableLow = nes.ppuBus.read(nameTable * 16 + fineY)
-    const patternTableHigh = nes.ppuBus.read(nameTable * 16 + fineY + 8)
+    const patternTableLow = nes.ppu.bus.read(nameTable * 16 + fineY)
+    const patternTableHigh = nes.ppu.bus.read(nameTable * 16 + fineY + 8)
 
     for (let fineX = 0; fineX < 8; fineX++) {
       const address =
@@ -56,7 +56,7 @@ const renderPattern = (
         (bitOf(attributeTableLow, 7 - fineX) << 2) |
         (bitOf(patternTableHigh, 7 - fineX) << 1) |
         bitOf(patternTableLow, 7 - fineX)
-      const palette = nes.ppu.palettes.find(nes.ppuBus.read(address))
+      const palette = nes.ppu.palettes.find(nes.ppu.bus.read(address))
       const baseIndex = ((coarseY * 8 + fineY) * imageData.width + (imageDataBaseX + coarseX * 8 + fineX)) * 4
 
       imageData.data[baseIndex + 0] = palette[0] // Red
@@ -69,11 +69,11 @@ const renderPattern = (
 
 const renderPalettes = (context: CanvasRenderingContext2D): void => {
   for (let i = 0x00; i < 0x10; i++) {
-    const backgroundPalette = nes.ppu.palettes.find(nes.ppuBus.read(0x3f00 + i))
+    const backgroundPalette = nes.ppu.palettes.find(nes.ppu.bus.read(0x3f00 + i))
     context.fillStyle = `rgba(${backgroundPalette[0]}, ${backgroundPalette[1]}, ${backgroundPalette[2]}, 1)`
     context.fillRect(i * 16, 128, 16, 16)
 
-    const spritePalette = nes.ppu.palettes.find(nes.ppuBus.read(0x3f10 + i))
+    const spritePalette = nes.ppu.palettes.find(nes.ppu.bus.read(0x3f10 + i))
     context.fillStyle = `rgba(${spritePalette[0]}, ${spritePalette[1]}, ${spritePalette[2]}, 1)`
     context.fillRect(i * 16, 144, 16, 16)
   }
@@ -85,7 +85,7 @@ const render = () => {
   renderPalettes(context.value)
 }
 
-const handleFrameOrStep = () => {
+const handleNesFrameOrStep = () => {
   render()
 }
 
@@ -99,13 +99,13 @@ onMounted(() => {
 onActivated(() => {
   render()
 
-  nes.addEventListener('frame', handleFrameOrStep)
-  nes.addEventListener('step', handleFrameOrStep)
+  nes.on('frame', handleNesFrameOrStep)
+  nes.on('step', handleNesFrameOrStep)
 })
 
 onDeactivated(() => {
-  nes.removeEventListener('frame', handleFrameOrStep)
-  nes.removeEventListener('step', handleFrameOrStep)
+  nes.off('frame', handleNesFrameOrStep)
+  nes.off('step', handleNesFrameOrStep)
 })
 </script>
 

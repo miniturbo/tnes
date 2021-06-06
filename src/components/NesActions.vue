@@ -20,12 +20,7 @@
             <font-awesome-icon v-else icon="stop" />
           </span>
         </button>
-        <button
-          class="button"
-          title="Run Frame"
-          :disabled="nesStatus.isPoweredOff || !isStopped"
-          @click="handleRunFrameClick"
-        >
+        <button class="button" title="Run Frame" :disabled="isPoweredOff || !isStopped" @click="handleRunFrameClick">
           <span class="icon">
             <font-awesome-icon icon="fast-forward" />
           </span>
@@ -33,25 +28,20 @@
         <button
           class="button"
           title="Run Scanline"
-          :disabled="nesStatus.isPoweredOff || !isStopped"
+          :disabled="isPoweredOff || !isStopped"
           @click="handleRunScanlineClick"
         >
           <span class="icon">
             <font-awesome-icon icon="step-forward" />
           </span>
         </button>
-        <button
-          class="button"
-          title="Run Step"
-          :disabled="nesStatus.isPoweredOff || !isStopped"
-          @click="handleRunStepClick"
-        >
+        <button class="button" title="Run Step" :disabled="isPoweredOff || !isStopped" @click="handleRunStepClick">
           <span class="icon">
             <font-awesome-icon icon="chevron-right" />
           </span>
         </button>
         <button
-          :class="['button', { 'is-success': !nesStatus.isPoweredOff }]"
+          :class="['button', { 'is-success': !isPoweredOff }]"
           title="Power Up/Down"
           @click="handlePowerUpOrDownClick"
         >
@@ -66,7 +56,7 @@
         </button>
         <button
           :class="['button', { 'is-danger': isCanvasRecording }]"
-          :disabled="nesStatus.isPoweredOff"
+          :disabled="isPoweredOff"
           title="Record"
           @click="handleRecordClick"
         >
@@ -74,20 +64,12 @@
             <font-awesome-icon icon="video" />
           </span>
         </button>
-        <button
-          :class="['button', { 'is-success': debug }]"
-          :disabled="nesStatus.isPoweredOff"
-          title="Debug"
-          @click="handleDebugClick"
-        >
+        <button :class="['button', { 'is-success': debug }]" title="Debug" @click="handleDebugClick">
           <span class="icon">
             <font-awesome-icon icon="tools" />
           </span>
         </button>
       </div>
-    </div>
-    <div class="control">
-      <span class="fps">FPS:{{ nesFps }}</span>
     </div>
     <div class="control">
       <div class="select is-small">
@@ -103,155 +85,119 @@
         </select>
       </div>
     </div>
+    <div class="control">
+      <span class="fps">FPS:{{ nesFps }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
-import { injectStrict } from '/@/utils'
-import { NesKey } from '/@/composables/useNes'
-import { NesCanvasKey, NesCanvasScale } from '/@/composables/useNesCanvas'
-import { NesDebugKey } from '/@/composables/useNesDebug'
-import { Nes } from '/@/models/Nes'
-import { Rom } from '/@/models/Rom'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { NesKey } from '@/composables/useNes'
+import { NesCanvasKey, NesCanvasScale } from '@/composables/useNesCanvas'
+import { NesDebugKey } from '@/composables/useNesDebug'
+import { buildEventListener, injectStrict } from '@/utils'
 
 const { nes } = injectStrict(NesKey)
 const { debug, setDebug } = injectStrict(NesDebugKey)
 const { canvasScale, isCanvasRecording, recordCanvas, setCanvasScale } = injectStrict(NesCanvasKey)
 
-const isStopped = ref(false)
-const nesStatus = reactive({
-  isPoweredOff: nes.isPoweredOff,
-  isRunning: nes.isRunning,
-  isStopped: nes.isStopped,
-})
-const nesFps = ref('00.00')
 const romLabel = ref('Choose a ROM…')
+const isPoweredOff = ref(true)
+const isStopped = ref(false)
+const nesFps = ref('00.00')
 
-const handleRomChange = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLInputElement)) return
+const handleRomChange = buildEventListener<HTMLInputElement>((event) => {
   if (!event.currentTarget.files || event.currentTarget.files.length === 0) return
 
   event.currentTarget.blur()
 
   const file = event.currentTarget.files[0]
+
   const reader = new FileReader()
   reader.addEventListener('load', () => {
     if (!(reader.result instanceof ArrayBuffer)) return
 
-    nes.rom = Rom.load(reader.result)
     nes.powerDown()
+    nes.loadRom(reader.result)
     nes.powerUp(!isStopped.value)
+
+    isPoweredOff.value = false
   })
   reader.readAsArrayBuffer(file)
 
   romLabel.value = file.name
-}
+})
 
-const handleRunOrStopClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLButtonElement)) return
-
+const handleRunOrStopClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
 
   if (isStopped.value) {
-    isStopped.value = false
     nes.run()
   } else {
-    isStopped.value = true
     nes.stop()
   }
-}
 
-const handleRunFrameClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLButtonElement)) return
+  isStopped.value = !isStopped.value
+})
 
+const handleRunFrameClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
-
   nes.runFrame()
-}
+})
 
-const handleRunScanlineClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLButtonElement)) return
-
+const handleRunScanlineClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
-
   nes.runScanline()
-}
+})
 
-const handleRunStepClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLButtonElement)) return
-
+const handleRunStepClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
-
   nes.runStep()
-}
+})
 
-const handlePowerUpOrDownClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLButtonElement)) return
-
+const handlePowerUpOrDownClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
 
-  if (nes.isPoweredOff) {
+  if (isPoweredOff.value) {
     nes.powerUp(!isStopped.value)
   } else {
     nes.powerDown()
   }
-}
 
-const handleResetClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLButtonElement)) return
+  isPoweredOff.value = !isPoweredOff.value
+})
 
+const handleResetClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
-
   nes.reset()
-}
+})
 
-const handleRecordClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLInputElement)) return
-
+const handleRecordClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
-
   recordCanvas()
-}
+})
 
-const handleDebugClick = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLButtonElement)) return
-
+const handleDebugClick = buildEventListener<HTMLButtonElement>((event) => {
   event.currentTarget.blur()
-
   setDebug(!debug.value)
-}
+})
 
-const handleCanvasScaleChange = (event: Event) => {
-  if (!(event.currentTarget instanceof HTMLSelectElement)) return
-
+const handleCanvasScaleChange = buildEventListener<HTMLSelectElement>((event) => {
   event.currentTarget.blur()
-
   setCanvasScale(event.currentTarget.value as NesCanvasScale)
-}
+})
 
-const handleNesStateChange = (event: Event) => {
-  if (!(event.currentTarget instanceof Nes)) return
-
-  nesStatus.isPoweredOff = event.currentTarget.isPoweredOff
-  nesStatus.isRunning = event.currentTarget.isRunning
-  nesStatus.isStopped = event.currentTarget.isStopped
-}
-
-const handleNesFps = (event: Event) => {
-  if (!(event.currentTarget instanceof Nes)) return
-
-  nesFps.value = event.currentTarget.fps.toFixed(2).padStart(5, '0')
+const handleNesFps = () => {
+  nesFps.value = nes.fps.toFixed(2).padStart(5, '0')
 }
 
 onMounted(() => {
-  nes.addEventListener('statechange', handleNesStateChange)
-  nes.addEventListener('fps', handleNesFps)
+  nes.on('fps', handleNesFps)
 })
 
 onUnmounted(() => {
-  nes.removeEventListener('statechange', handleNesStateChange)
-  nes.removeEventListener('fps', handleNesFps)
+  nes.off('fps', handleNesFps)
 })
 </script>
 

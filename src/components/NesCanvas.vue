@@ -5,23 +5,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { injectStrict } from '/@/utils'
-import { NesKey } from '/@/composables/useNes'
-import { NesCanvasKey } from '/@/composables/useNesCanvas'
-import { CanvasRenderer } from '/@/models/CanvasRenderer'
+import { onMounted } from 'vue'
+import { NesKey } from '@/composables/useNes'
+import { NesCanvasKey } from '@/composables/useNesCanvas'
+import { CanvasRenderer } from '@/models/CanvasRenderer'
+import { injectStrict } from '@/utils'
 
 const { nes } = injectStrict(NesKey)
-const { canvasScale, setCanvas } = injectStrict(NesCanvasKey)
-
-const canvas = ref<HTMLCanvasElement | null>(null)
+const { canvas, canvasScale } = injectStrict(NesCanvasKey)
 
 onMounted(() => {
   if (!canvas.value) return
 
   nes.videoRenderer = new CanvasRenderer(canvas.value)
-
-  setCanvas(canvas.value)
 })
 </script>
 

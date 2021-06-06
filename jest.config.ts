@@ -1,6 +1,7 @@
-import type { Config } from '@jest/types'
 import { pathsToModuleNameMapper } from 'ts-jest/utils'
+// eslint-disable-next-line no-restricted-imports
 import { compilerOptions } from './tsconfig.json'
+import type { Config } from '@jest/types'
 
 const config: Config.InitialOptions = {
   coverageDirectory: 'coverage',

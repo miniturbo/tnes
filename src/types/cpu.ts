@@ -16,16 +16,6 @@ export const CpuAddressingMode = {
 
 export type CpuAddressingMode = typeof CpuAddressingMode[keyof typeof CpuAddressingMode]
 
-export type CpuBusReadEventDetail = {
-  address: Uint16
-  data: Uint8
-}
-
-export type CpuBusWriteEventDetail = {
-  address: Uint16
-  data: Uint8
-}
-
 export type CpuCycle = number
 
 export const CpuInstructionType = {

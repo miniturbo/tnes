@@ -63,14 +63,6 @@ export function setBitFlag(value: number, index: number, flag: boolean): number 
   return flag ? value | mask : value & ~mask
 }
 
-export function shiftLeft(value: number, bit = 1): number {
-  return value << bit
-}
-
-export function shiftRight(value: number, bit = 1): number {
-  return value >> bit
-}
-
 export function uint8ToInt8(number: Uint8): Int8 {
   return number < 0x80 ? number : number - 0x100
 }

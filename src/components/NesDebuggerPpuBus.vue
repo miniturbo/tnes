@@ -36,9 +36,9 @@
 
 <script setup lang="ts">
 import { computed, onActivated, onDeactivated, onMounted, ref } from 'vue'
-import { injectStrict, toHex } from '/@/utils'
-import { NesKey } from '/@/composables/useNes'
-import { useVirtualList } from '/@/composables/useVirtualList'
+import { NesKey } from '@/composables/useNes'
+import { useVirtualList } from '@/composables/useVirtualList'
+import { injectStrict, toHex } from '@/utils'
 
 type Row = (Uint8 | Uint16)[]
 
@@ -58,7 +58,7 @@ const rows = computed(() => {
     const row = [i * 16]
 
     for (let j = 0; j < 16; j++) {
-      row.push(nes.ppuBus.read(i * 16 + j))
+      row.push(nes.ppu.bus.read(i * 16 + j))
     }
 
     rows.push(row)
@@ -75,7 +75,7 @@ const handleWheel = (event: WheelEvent) => {
   setCurrentRow(currentRow.value + Math.floor(event.deltaY * 0.5), 0x400 - maxRowsSize.value)
 }
 
-const handleFrameOrStep = () => {
+const handleNesFrameOrStep = () => {
   updateComputedTimestamp()
 }
 
@@ -88,13 +88,13 @@ onMounted(() => {
 onActivated(() => {
   updateComputedTimestamp()
 
-  nes.addEventListener('frame', handleFrameOrStep)
-  nes.addEventListener('step', handleFrameOrStep)
+  nes.on('frame', handleNesFrameOrStep)
+  nes.on('step', handleNesFrameOrStep)
 })
 
 onDeactivated(() => {
-  nes.removeEventListener('frame', handleFrameOrStep)
-  nes.removeEventListener('step', handleFrameOrStep)
+  nes.off('frame', handleNesFrameOrStep)
+  nes.off('step', handleNesFrameOrStep)
 })
 </script>
 

@@ -1,80 +1,45 @@
-import { CpuAddressingMode, CpuCycle, CpuInstructionType, NesDumper, PpuCycle, PpuScanline } from '/@/types'
-import { validateNonNullable } from '/@/utils'
-import { CpuBus, CpuInstruction, CpuOperands, CpuRegisters } from '/@/models/Cpu'
+import { Cpu } from '@/models/Cpu'
+import { Instruction } from '@/models/Cpu/Instruction'
+import { Operands } from '@/models/Cpu/Operands'
+import { Ppu } from '@/models/Ppu'
+import { CpuAddressingMode, CpuCycle, CpuInstructionType } from '@/types'
+import { validateNonNullable } from '@/utils'
 
-type NestestDumperResult = {
-  cpuProgramCounter: string
-  cpuOpcodeAndOperand: string
-  cpuInstructionType: string
-  cpuInstructionAddressAndValue: string
-  cpuRegisters: string
-  cpuCycle: string
-  ppuScanlineAndCycle: string
-}
-
-export class NestestCpuDumper implements NesDumper {
-  cpuBus: CpuBus | null = null
-  cpuInstruction: CpuInstruction | null = null
-  cpuOperands: CpuOperands | null = null
-  ppuScanline: PpuScanline | null = null
-  ppuCycle: PpuCycle | null = null
-
-  private result: NestestDumperResult = {
-    cpuProgramCounter: '',
-    cpuOpcodeAndOperand: '',
-    cpuInstructionType: '',
-    cpuInstructionAddressAndValue: '',
-    cpuRegisters: '',
-    cpuCycle: '',
-    ppuScanlineAndCycle: '',
-  }
-  private cpuProgramCounterRegister: Uint16 | null = null
-  private cpuStackPointerRegister: Uint8 | null = null
-  private cpuAccumulatorRegister: Uint8 | null = null
-  private cpuIndexXRegister: Uint8 | null = null
-  private cpuIndexYRegister: Uint8 | null = null
-  private cpuStatusRegister: Uint8 | null = null
+export class NestestDumper {
+  private cpuInstruction: Instruction | null = null
+  private cpuOperands: Operands | null = null
   private cpuCycle: CpuCycle = 0
+  private dumped = ''
 
-  set cpuRegisters(cpuRegisters: CpuRegisters) {
-    this.cpuProgramCounterRegister = cpuRegisters.programCounter
-    this.cpuStackPointerRegister = cpuRegisters.stackPointer
-    this.cpuAccumulatorRegister = cpuRegisters.accumulator
-    this.cpuIndexXRegister = cpuRegisters.indexX
-    this.cpuIndexYRegister = cpuRegisters.indexY
-    this.cpuStatusRegister = cpuRegisters.status
-  }
-
-  incrementCpuCycle(cpuCycle: CpuCycle): void {
-    this.cpuCycle += cpuCycle
-  }
-
-  save(): void {
-    this.result.cpuProgramCounter = this.saveCpuProgramCounter()
-    this.result.cpuOpcodeAndOperand = this.saveCpuOpcodeAndOperand()
-    this.result.cpuInstructionType = this.saveCpuInstructionType()
-    this.result.cpuInstructionAddressAndValue = this.saveCpuInstructionAddressAndValue()
-    this.result.cpuRegisters = this.saveCpuRegisters()
-    this.result.ppuScanlineAndCycle = this.savePpuScanlineAndCycle()
-    this.result.cpuCycle = this.saveCpuCycle()
+  constructor(private cpu: Cpu, private ppu: Ppu) {
+    this.cpu.on('reset', this.handleReset.bind(this))
+    this.cpu.on('afterfetch', this.handleAfterFetch.bind(this))
+    this.cpu.on('afterdecode', this.handleAfterDecode.bind(this))
+    this.cpu.on('beforeexecute', this.handleBeforeExecute.bind(this))
+    this.cpu.on('afterexecute', this.handleAfterExecute.bind(this))
   }
 
   dump(): string {
-    return [
-      this.result.cpuProgramCounter,
-      this.result.cpuOpcodeAndOperand,
-      this.result.cpuInstructionType,
-      this.result.cpuInstructionAddressAndValue,
-      this.result.cpuRegisters,
-      this.result.ppuScanlineAndCycle,
-      this.result.cpuCycle,
+    return this.dumped
+  }
+
+  private save(): void {
+    this.dumped = [
+      this.saveCpuProgramCounter(),
+      this.saveCpuOpcodeAndOperand(),
+      this.saveCpuInstructionType(),
+      this.saveCpuInstructionAddressAndValue(),
+      this.saveCpuRegisters(),
+      this.savePpuScanlineAndCycle(),
+      this.saveCpuCycle(),
     ].join(' ')
   }
 
   private saveCpuProgramCounter(): string {
     validateNonNullable(this.cpuOperands)
     return (
-      this.formatToHex((this.cpuProgramCounterRegister || 0x000) - 1 - this.cpuOperands.fetchedOperands.length, 4) + ' '
+      this.formatToHex((this.cpu.registers.programCounter || 0x000) - 1 - this.cpuOperands.fetchedOperands.length, 4) +
+      ' '
     )
   }
 
@@ -110,31 +75,28 @@ export class NestestCpuDumper implements NesDumper {
       }
       case CpuAddressingMode.ZeroPage: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         return (
           `$${this.formatToHex(this.cpuOperands.operand, 2)} = ` +
-          `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}                   `
+          `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)}                   `
         )
       }
       case CpuAddressingMode.ZeroPageX: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         return (
           `$${this.formatToHex(this.cpuOperands.intermediateOperands[0], 2)},X @ ` +
           `${this.formatToHex(this.cpuOperands.operand, 2)} = ` +
-          `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}            `
+          `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)}            `
         )
       }
       case CpuAddressingMode.ZeroPageY: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         return (
           `$${this.formatToHex(this.cpuOperands.intermediateOperands[0], 2)},Y @ ` +
           `${this.formatToHex(this.cpuOperands.operand, 2)} = ` +
-          `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}            `
+          `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)}            `
         )
       }
       case CpuAddressingMode.Relative: {
@@ -144,7 +106,6 @@ export class NestestCpuDumper implements NesDumper {
       }
       case CpuAddressingMode.Absolute: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         if (
           this.cpuInstruction.type === CpuInstructionType.Jmp ||
@@ -154,28 +115,26 @@ export class NestestCpuDumper implements NesDumper {
         } else {
           return (
             `$${this.formatToHex(this.cpuOperands.operand, 4)} = ` +
-            `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}                 `
+            `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)}                 `
           )
         }
       }
       case CpuAddressingMode.AbsoluteX: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         return (
           `$${this.formatToHex(this.cpuOperands.intermediateOperands[0], 4)},X @ ` +
           `${this.formatToHex(this.cpuOperands.operand, 4)} = ` +
-          `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}        `
+          `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)}        `
         )
       }
       case CpuAddressingMode.AbsoluteY: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         return (
           `$${this.formatToHex(this.cpuOperands.intermediateOperands[0], 4)},Y @ ` +
           `${this.formatToHex(this.cpuOperands.operand, 4)} = ` +
-          `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}        `
+          `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)}        `
         )
       }
       case CpuAddressingMode.Indirect: {
@@ -188,24 +147,22 @@ export class NestestCpuDumper implements NesDumper {
       }
       case CpuAddressingMode.IndexedIndirect: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         return (
           `($${this.formatToHex(this.cpuOperands.intermediateOperands[0], 2)},X) @ ` +
           `${this.formatToHex(this.cpuOperands.intermediateOperands[1], 2)} = ` +
           `${this.formatToHex(this.cpuOperands.operand, 4)} = ` +
-          `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)}   `
+          `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)}   `
         )
       }
       case CpuAddressingMode.IndirectIndexed: {
         validateNonNullable(this.cpuOperands)
-        validateNonNullable(this.cpuBus)
 
         return (
           `($${this.formatToHex(this.cpuOperands.intermediateOperands[0], 2)}),Y = ` +
           `${this.formatToHex(this.cpuOperands.intermediateOperands[1], 4)} @ ` +
           `${this.formatToHex(this.cpuOperands.operand, 4)} = ` +
-          `${this.formatToHex(this.cpuBus.read(this.cpuOperands.operand), 2)} `
+          `${this.formatToHex(this.cpu.bus.read(this.cpuOperands.operand), 2)} `
         )
       }
     }
@@ -213,11 +170,11 @@ export class NestestCpuDumper implements NesDumper {
 
   private saveCpuRegisters(): string {
     return [
-      `A:${this.formatToHex(this.cpuAccumulatorRegister, 2)}`,
-      `X:${this.formatToHex(this.cpuIndexXRegister, 2)}`,
-      `Y:${this.formatToHex(this.cpuIndexYRegister, 2)}`,
-      `P:${this.formatToHex(this.cpuStatusRegister, 2)}`,
-      `SP:${this.formatToHex(this.cpuStackPointerRegister, 2)}`,
+      `A:${this.formatToHex(this.cpu.registers.accumulator, 2)}`,
+      `X:${this.formatToHex(this.cpu.registers.indexX, 2)}`,
+      `Y:${this.formatToHex(this.cpu.registers.indexY, 2)}`,
+      `P:${this.formatToHex(this.cpu.registers.status, 2)}`,
+      `SP:${this.formatToHex(this.cpu.registers.stackPointer, 2)}`,
     ].join(' ')
   }
 
@@ -226,9 +183,7 @@ export class NestestCpuDumper implements NesDumper {
   }
 
   private savePpuScanlineAndCycle(): string {
-    validateNonNullable(this.ppuScanline)
-    validateNonNullable(this.ppuCycle)
-    return `PPU:${this.formatToDecimal(this.ppuScanline, 3)},${this.formatToDecimal(this.ppuCycle, 3)}`
+    return `PPU:${this.formatToDecimal(this.ppu.scanline, 3)},${this.formatToDecimal(this.ppu.cycle, 3)}`
   }
 
   private formatToDecimal(number: number | null | undefined, length: number): string {
@@ -239,5 +194,25 @@ export class NestestCpuDumper implements NesDumper {
     return number !== null && number !== undefined
       ? number.toString(16).padStart(length, '0').toUpperCase()
       : ' '.repeat(length)
+  }
+
+  private handleReset(cycle: CpuCycle): void {
+    this.cpuCycle += cycle
+  }
+
+  private handleAfterFetch(instruction: Instruction): void {
+    this.cpuInstruction = instruction
+  }
+
+  private handleAfterDecode(operands: Operands): void {
+    this.cpuOperands = operands
+  }
+
+  private handleBeforeExecute(): void {
+    this.save()
+  }
+
+  private handleAfterExecute(cycle: CpuCycle): void {
+    this.cpuCycle += cycle
   }
 }

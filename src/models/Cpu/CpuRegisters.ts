@@ -1,4 +1,4 @@
-import { bitFlag, maskAsByte, maskAsWord, setBitFlag } from '/@/utils'
+import { bitFlag, maskAsByte, maskAsWord, setBitFlag } from '@/utils'
 
 /*
   7  bit  0
@@ -16,7 +16,7 @@ import { bitFlag, maskAsByte, maskAsWord, setBitFlag } from '/@/utils'
   see: http://wiki.nesdev.com/w/index.php/Status_flags
   see: http://obelisk.me.uk/6502/registers.html
 */
-export class Registers {
+export class CpuRegisters {
   programCounter: Uint16 = 0x0000
   stackPointer: Uint8 = 0x00
   accumulator: Uint8 = 0x00

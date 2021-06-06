@@ -1,6 +1,6 @@
-import { CpuAddressingMode, CpuCycle, CpuInstructionType, CpuOpcode } from '/@/types'
-import { UnknownOpcodeError } from '/@/errors'
-import { Instruction } from '/@/models/Cpu/Instruction'
+import { UnknownOpcodeError } from '@/errors'
+import { Instruction } from '@/models/Cpu/Instruction'
+import { CpuAddressingMode, CpuCycle, CpuInstructionType, CpuOpcode } from '@/types'
 
 // see: http://obelisk.me.uk/6502/reference.html
 // see: https://wiki.nesdev.com/w/index.php/Programming_with_unofficial_opcodes

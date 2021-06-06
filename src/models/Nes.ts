@@ -1,22 +1,25 @@
-import { NesCycle, NesState, VideoRenderer } from '/@/types'
-import { Controller } from '/@/models/Controller'
-import { Cpu, CpuBus } from '/@/models/Cpu'
-import { Ppu, PpuBus } from '/@/models/Ppu'
-import { Ram } from '/@/models/Ram'
-import { Rom } from '/@/models/Rom'
-import { InterruptController } from './InterruptController'
+import { EventEmitter } from 'events'
+import { Apu } from '@/models/Apu'
+import { Controller } from '@/models/Controller'
+import { Cpu } from '@/models/Cpu'
+import { DmaController } from '@/models/DmaController'
+import { InterruptController } from '@/models/InterruptController'
+import { Ppu } from '@/models/Ppu'
+import { Rom } from '@/models/Rom'
+import { NesCycle, NesState, VideoRenderer } from '@/types'
 
-export class Nes extends EventTarget {
-  readonly cpu: Cpu
-  readonly cpuBus: CpuBus
-  readonly ppu: Ppu
-  readonly ppuBus: PpuBus
-  readonly controller1: Controller
-  readonly controller2: Controller
+export class Nes extends EventEmitter {
+  readonly cpu = new Cpu()
+  readonly ppu = new Ppu()
+  readonly apu = new Apu()
+  readonly controller1 = new Controller()
+  readonly controller2 = new Controller()
+
+  private dmaController = new DmaController()
+  private interruptController = new InterruptController()
 
   private _state: NesState = NesState.PoweredOff
   private _fps = 0
-
   private requestId: number | null = null
   private fpsTimestamp = 0
   private fpsFrame = 0
@@ -25,19 +28,15 @@ export class Nes extends EventTarget {
   constructor() {
     super()
 
-    const interruptController = new InterruptController()
-    const workRam = new Ram(2048)
-    const videoRam = new Ram(2048)
-    const paletteRam = new Ram(32)
-
-    this.controller1 = new Controller()
-    this.controller2 = new Controller()
-
-    this.ppuBus = new PpuBus(videoRam, paletteRam)
-    this.ppu = new Ppu(this.ppuBus, interruptController)
-
-    this.cpuBus = new CpuBus(workRam, this.ppu, this.controller1, this.controller2)
-    this.cpu = new Cpu(this.cpuBus, interruptController)
+    this.cpu.bus.ppu = this.ppu
+    this.cpu.bus.apu = this.apu
+    this.cpu.bus.controller1 = this.controller1
+    this.cpu.bus.controller2 = this.controller2
+    this.cpu.bus.dmaController = this.dmaController
+    this.ppu.interruptController = this.interruptController
+    this.dmaController.cpu = this.cpu
+    this.dmaController.ppu = this.ppu
+    this.interruptController.cpu = this.cpu
   }
 
   get state(): NesState {
@@ -46,23 +45,6 @@ export class Nes extends EventTarget {
 
   get fps(): number {
     return this._fps
-  }
-
-  get isPoweredOff(): boolean {
-    return this.state === NesState.PoweredOff
-  }
-
-  get isRunning(): boolean {
-    return this.state === NesState.Running
-  }
-
-  get isStopped(): boolean {
-    return this.state === NesState.Stopped
-  }
-
-  set rom(rom: Rom) {
-    this.cpuBus.rom = rom
-    this.ppuBus.rom = rom
   }
 
   set videoRenderer(videoRenderer: VideoRenderer) {
@@ -83,7 +65,7 @@ export class Nes extends EventTarget {
 
   powerDown(): void {
     this.stop()
-    this.changeState(NesState.PoweredOff)
+    this._state = NesState.PoweredOff
   }
 
   reset(): void {
@@ -96,8 +78,14 @@ export class Nes extends EventTarget {
     this.ppu.reset()
   }
 
+  loadRom(buffer: ArrayBuffer): void {
+    const rom = Rom.load(buffer)
+    this.cpu.bus.rom = rom
+    this.ppu.bus.rom = rom
+  }
+
   run(): void {
-    if (!this.isRunning) this.changeState(NesState.Running)
+    this._state = NesState.Running
 
     this.runFrame()
     this.measureFps()
@@ -110,7 +98,7 @@ export class Nes extends EventTarget {
       this.runCycle()
     } while (this.ppu.scanline > 0 || this.ppu.cycle > 0)
 
-    this.dispatchEvent(new CustomEvent('frame'))
+    this.emit('frame')
   }
 
   runScanline(): void {
@@ -120,7 +108,7 @@ export class Nes extends EventTarget {
       this.runCycle()
     } while (!(this.ppu.scanline !== prevScanline && this.ppu.cycle === 0))
 
-    this.dispatchEvent(new CustomEvent('step'))
+    this.emit('step')
   }
 
   runStep(): void {
@@ -128,12 +116,12 @@ export class Nes extends EventTarget {
       this.runCycle()
     } while (this.ppuSyncCycle > 0 || this.cpu.isStall)
 
-    this.dispatchEvent(new CustomEvent('step'))
+    this.emit('step')
   }
 
   stop(): void {
     if (this.requestId) cancelAnimationFrame(this.requestId)
-    this.changeState(NesState.Stopped)
+    this._state = NesState.Stopped
   }
 
   private runCycle(): void {
@@ -147,11 +135,6 @@ export class Nes extends EventTarget {
     this.ppuSyncCycle--
   }
 
-  private changeState(state: NesState): void {
-    this._state = state
-    this.dispatchEvent(new CustomEvent('statechange'))
-  }
-
   private measureFps(): void {
     if (this.fpsFrame < 60) {
       this.fpsFrame++
@@ -162,7 +145,7 @@ export class Nes extends EventTarget {
 
     if (this.fpsTimestamp > 0) {
       this._fps = Math.round(((1000 * 60) / (timestamp - this.fpsTimestamp)) * 100) / 100
-      this.dispatchEvent(new CustomEvent('fps'))
+      this.emit('fps')
     }
 
     this.fpsTimestamp = timestamp

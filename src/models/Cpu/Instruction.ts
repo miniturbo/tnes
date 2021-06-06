@@ -1,4 +1,4 @@
-import { CpuAddressingMode, CpuCycle, CpuInstructionType, CpuOpcode } from '/@/types'
+import { CpuAddressingMode, CpuCycle, CpuInstructionType, CpuOpcode } from '@/types'
 
 export class Instruction {
   constructor(

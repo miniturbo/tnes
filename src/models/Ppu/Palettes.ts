@@ -1,4 +1,4 @@
-import { Rgb } from '/@/types'
+import { Rgb } from '@/types'
 
 export class Palettes {
   palettes: { default: Rgb[] } = {

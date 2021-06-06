@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import NesContainer from '/@/components/NesContainer.vue'
+import NesContainer from '@/components/NesContainer.vue'
 </script>
 
 <style>

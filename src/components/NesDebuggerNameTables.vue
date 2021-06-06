@@ -6,8 +6,8 @@
 
 <script setup lang="ts">
 import { onActivated, onDeactivated, onMounted, ref } from 'vue'
-import { bitFlag, bitOf, injectStrict } from '/@/utils'
-import { NesKey } from '/@/composables/useNes'
+import { NesKey } from '@/composables/useNes'
+import { bitFlag, bitOf, injectStrict } from '@/utils'
 
 const { nes } = injectStrict(NesKey)
 
@@ -23,20 +23,20 @@ const renderNametable = (
   for (let coarseX = 0; coarseX < 32; coarseX++) {
     for (let coarseY = 0; coarseY < 30; coarseY++) {
       const nameTable =
-        nes.ppuBus.read(0x2000 | offsetAddress | (coarseY << 5) | coarseX) +
+        nes.ppu.bus.read(0x2000 | offsetAddress | (coarseY << 5) | coarseX) +
         nes.ppu.registers.backgroundPatternTableAddres / 16
 
       const address = 0x23c0 | offsetAddress | ((coarseY & 0x1c) << 1) | ((coarseX & 0x1c) >> 2)
       const isBottom = (coarseY & 0x2) > 0
       const isRight = (coarseX & 0x2) > 0
       const position = ((isBottom ? 0x02 : 0x00) | (isRight ? 0x01 : 0x00)) << 0x01
-      const data = (nes.ppuBus.read(address) >> position) & 0x03
-      const attributeTableLow = bitFlag(data, 1) ? 0xff : 0x00
-      const attributeTableHigh = bitFlag(data, 2) ? 0xff : 0x00
+      const data = (nes.ppu.bus.read(address) >> position) & 0x03
+      const attributeTableLow = bitFlag(data, 0) ? 0xff : 0x00
+      const attributeTableHigh = bitFlag(data, 1) ? 0xff : 0x00
 
       for (let fineY = 0; fineY < 8; fineY++) {
-        const patternTableLow = nes.ppuBus.read(nameTable * 16 + fineY)
-        const patternTableHigh = nes.ppuBus.read(nameTable * 16 + fineY + 8)
+        const patternTableLow = nes.ppu.bus.read(nameTable * 16 + fineY)
+        const patternTableHigh = nes.ppu.bus.read(nameTable * 16 + fineY + 8)
 
         for (let fineX = 0; fineX < 8; fineX++) {
           const address =
@@ -45,7 +45,7 @@ const renderNametable = (
             (bitOf(attributeTableLow, 7 - fineX) << 2) |
             (bitOf(patternTableHigh, 7 - fineX) << 1) |
             bitOf(patternTableLow, 7 - fineX)
-          const palette = nes.ppu.palettes.find(nes.ppuBus.read(address))
+          const palette = nes.ppu.palettes.find(nes.ppu.bus.read(address))
           const baseIndex =
             ((imageDataBaseY + coarseY * 8 + fineY) * imageData.width + (imageDataBaseX + coarseX * 8 + fineX)) * 4
 
@@ -75,7 +75,7 @@ const render = () => {
   renderNameTables(context.value)
 }
 
-const handleFrameOrStep = () => {
+const handleNesFrameOrStep = () => {
   render()
 }
 
@@ -89,13 +89,13 @@ onMounted(() => {
 onActivated(() => {
   render()
 
-  nes.addEventListener('frame', handleFrameOrStep)
-  nes.addEventListener('step', handleFrameOrStep)
+  nes.on('frame', handleNesFrameOrStep)
+  nes.on('step', handleNesFrameOrStep)
 })
 
 onDeactivated(() => {
-  nes.removeEventListener('frame', handleFrameOrStep)
-  nes.removeEventListener('step', handleFrameOrStep)
+  nes.off('frame', handleNesFrameOrStep)
+  nes.off('step', handleNesFrameOrStep)
 })
 </script>
 

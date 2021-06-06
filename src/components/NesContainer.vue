@@ -6,10 +6,10 @@
 </template>
 
 <script setup lang="ts">
-import { injectStrict } from '/@/utils'
-import NesMain from '/@/components/NesMain.vue'
-import NesDebugger from '/@/components/NesDebugger.vue'
-import { NesDebugKey } from '/@/composables/useNesDebug'
+import NesDebugger from '@/components/NesDebugger.vue'
+import NesMain from '@/components/NesMain.vue'
+import { NesDebugKey } from '@/composables/useNesDebug'
+import { injectStrict } from '@/utils'
 
 const { debug } = injectStrict(NesDebugKey)
 </script>

@@ -1,4 +1,4 @@
-export class Latches {
+export class PpuLatches {
   nameTable: Uint8 = 0x00
   attributeTableLow: Uint8 = 0x00
   attributeTableHigh: Uint8 = 0x00

@@ -1,5 +1,5 @@
-import { Rgb, VideoRenderer } from '/@/types'
-import { validateNonNullable } from '/@/utils'
+import { Rgb, VideoRenderer } from '@/types'
+import { validateNonNullable } from '@/utils'
 
 export class CanvasRenderer implements VideoRenderer {
   static readonly CANVAS_WIDTH: number = 256
@@ -29,7 +29,7 @@ export class CanvasRenderer implements VideoRenderer {
     this.imageData.data[baseIndex + 3] = 0xff // Alpha
   }
 
-  renderScreen(): void {
+  renderFrame(): void {
     this.canvasContext.putImageData(this.imageData, 0, 0)
   }
 }

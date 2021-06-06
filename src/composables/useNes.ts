@@ -1,6 +1,6 @@
 import { InjectionKey } from 'vue'
-import { ControllerButton } from '/@/types'
-import { Nes } from '/@/models/Nes'
+import { Nes } from '@/models/Nes'
+import { ControllerButton } from '@/types'
 
 const CodeMap: { [key: string]: ControllerButton } = {
   Enter: ControllerButton.Start,
@@ -14,6 +14,8 @@ const CodeMap: { [key: string]: ControllerButton } = {
 } as const
 
 const nes = new Nes()
+
+window.nes = nes
 
 document.addEventListener('keydown', (event) => {
   if (!CodeMap[event.code]) return

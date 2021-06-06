@@ -43,8 +43,8 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive } from 'vue'
-import { injectStrict, toHex } from '/@/utils'
-import { NesKey } from '/@/composables/useNes'
+import { NesKey } from '@/composables/useNes'
+import { injectStrict, toHex } from '@/utils'
 
 const { nes } = injectStrict(NesKey)
 
@@ -66,7 +66,7 @@ const ppuStatus = reactive({
   writeToggle: false,
 })
 
-const handleFrameOrStep = () => {
+const handleNesFrameOrStep = () => {
   cpuStatus.programCounter = nes.cpu.registers.programCounter
   cpuStatus.stackPointer = nes.cpu.registers.stackPointer
   cpuStatus.accumulator = nes.cpu.registers.accumulator
@@ -91,13 +91,13 @@ const handleFrameOrStep = () => {
 }
 
 onMounted(() => {
-  nes.addEventListener('frame', handleFrameOrStep)
-  nes.addEventListener('step', handleFrameOrStep)
+  nes.on('frame', handleNesFrameOrStep)
+  nes.on('step', handleNesFrameOrStep)
 })
 
 onUnmounted(() => {
-  nes.removeEventListener('frame', handleFrameOrStep)
-  nes.removeEventListener('step', handleFrameOrStep)
+  nes.off('frame', handleNesFrameOrStep)
+  nes.off('step', handleNesFrameOrStep)
 })
 </script>
 

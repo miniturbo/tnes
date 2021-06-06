@@ -18,13 +18,13 @@
 </template>
 
 <script setup lang="ts">
-import type { CpuOperand } from '/@/types'
 import { computed, onActivated, onDeactivated, onMounted, ref } from 'vue'
-import { CpuAddressingMode } from '/@/types'
-import { combineIntoWord, injectStrict, maskAsWord, toHex, uint8ToInt8 } from '/@/utils'
-import { NesKey } from '/@/composables/useNes'
-import { useVirtualList } from '/@/composables/useVirtualList'
-import { CpuInstructionSet } from '/@/models/Cpu'
+import { NesKey } from '@/composables/useNes'
+import { useVirtualList } from '@/composables/useVirtualList'
+import { InstructionSet } from '@/models/Cpu'
+import { CpuAddressingMode } from '@/types'
+import type { CpuOperand } from '@/types'
+import { bitFlag, combineIntoWord, injectStrict, maskAsWord, setBitFlag, toHex, uint8ToInt8 } from '@/utils'
 
 type Row = {
   address: Uint16
@@ -34,6 +34,8 @@ type Row = {
 
 const { nes } = injectStrict(NesKey)
 const { currentRow, maxRowsSize, setContainer, setBaseRow, setCurrentRow } = useVirtualList()
+
+const codeDataLog = new Uint8Array(0xffff)
 
 const container = ref<HTMLDivElement | null>(null)
 const baseRow = ref<HTMLTableRowElement | null>(null)
@@ -50,19 +52,19 @@ const rows = computed(() => {
     let disassembly = ''
     let nextAddress = address + 1
 
-    if (nes.cpu.codeDataLogger.isCode(address)) {
-      const opcode = nes.cpuBus.read(address)
-      const instruction = CpuInstructionSet.findByOpcode(opcode)
+    if (bitFlag(codeDataLog[address], 0)) {
+      const opcode = nes.cpu.bus.read(address)
+      const instruction = InstructionSet.findByOpcode(opcode)
 
       let operand: CpuOperand = 0
 
       switch (instruction.byte) {
         case 2: {
-          operand = nes.cpuBus.read(address + 1)
+          operand = nes.cpu.bus.read(address + 1)
           break
         }
         case 3: {
-          operand = combineIntoWord(nes.cpuBus.read(address + 1), nes.cpuBus.read(address + 2))
+          operand = combineIntoWord(nes.cpu.bus.read(address + 1), nes.cpu.bus.read(address + 2))
           break
         }
       }
@@ -140,13 +142,18 @@ const handleWheel = (event: WheelEvent) => {
   setCurrentRow(currentRow.value + Math.floor(event.deltaY * 0.5), 0xffff)
 }
 
-const handleFrame = () => {
+const handleNesFrame = () => {
   updateComputedTimestamp()
 }
 
-const handleStep = () => {
+const handleNesStep = () => {
   setCurrentRow(nes.cpu.registers.programCounter - Math.floor(maxRowsSize.value / 2), 0xffff)
   updateComputedTimestamp()
+}
+
+const handleCpuResetOrAfterExecute = () => {
+  const address = nes.cpu.registers.programCounter
+  codeDataLog[address] = setBitFlag(codeDataLog[address], 0, true)
 }
 
 onMounted(() => {
@@ -159,13 +166,17 @@ onActivated(() => {
   setCurrentRow(nes.cpu.registers.programCounter - Math.floor(maxRowsSize.value / 2), 0xffff)
   updateComputedTimestamp()
 
-  nes.addEventListener('frame', handleFrame)
-  nes.addEventListener('step', handleStep)
+  nes.on('frame', handleNesFrame)
+  nes.on('step', handleNesStep)
+  nes.cpu.on('reset', handleCpuResetOrAfterExecute)
+  nes.cpu.on('afterexecute', handleCpuResetOrAfterExecute)
 })
 
 onDeactivated(() => {
-  nes.removeEventListener('frame', handleFrame)
-  nes.removeEventListener('step', handleStep)
+  nes.off('frame', handleNesFrame)
+  nes.off('step', handleNesStep)
+  nes.cpu.off('reset', handleCpuResetOrAfterExecute)
+  nes.cpu.off('afterexecute', handleCpuResetOrAfterExecute)
 })
 </script>
 

@@ -1,6 +1,6 @@
-import { bitFlag, maskAsByte, setBitFlag } from '/@/utils'
+import { bitFlag, maskAsByte, setBitFlag } from '@/utils'
 
-export class Registers {
+export class PpuRegisters {
   /*
     7  bit  0
     ---- ----
@@ -60,6 +60,9 @@ export class Registers {
                pre-render line.
   */
   status: Uint8 = 0x00
+  oamAddress: Uint8 = 0x00
+  primaryOam = new Uint8Array(4 * 64)
+  secondaryOam = new Uint8Array(4 * 8)
   currentVideoRamAddress: Uint16 = 0x0000
   temporaryVideoRamAddress: Uint16 = 0x0000
   writeToggle = false
@@ -68,16 +71,32 @@ export class Registers {
     return bitFlag(this.controller, 2) ? 32 : 1
   }
 
+  get spritePatternTableAddres(): Uint16 {
+    return bitFlag(this.controller, 3) ? 0x1000 : 0x0000
+  }
+
   get backgroundPatternTableAddres(): Uint16 {
     return bitFlag(this.controller, 4) ? 0x1000 : 0x0000
   }
 
+  get spriteSize(): Uint16 {
+    return bitFlag(this.controller, 5) ? 0x10 : 0x08
+  }
+
   get isNmiEnabled(): boolean {
-    return bitFlag(this.status, 7)
+    return bitFlag(this.controller, 7)
   }
 
   get isBackgroundEnabled(): boolean {
     return bitFlag(this.mask, 3)
+  }
+
+  get isSpriteEnabled(): boolean {
+    return bitFlag(this.mask, 4)
+  }
+
+  get isRenderingEnabled(): boolean {
+    return this.isBackgroundEnabled || this.isSpriteEnabled
   }
 
   get isVerticalBlankStarted(): boolean {
@@ -86,6 +105,23 @@ export class Registers {
 
   set isVerticalBlankStarted(flag: boolean) {
     this.status = maskAsByte(setBitFlag(this.status, 7, flag))
+  }
+
+  incrementOamAddress(): void {
+    this.oamAddress = maskAsByte(this.oamAddress + 1)
+  }
+
+  readPrimaryOam(): Uint8 {
+    return this.primaryOam[this.oamAddress]
+  }
+
+  writePrimaryOam(data: Uint8): void {
+    this.primaryOam[this.oamAddress] = data
+    this.incrementOamAddress()
+  }
+
+  copyPrimaryOam(data: Uint8Array): void {
+    data.forEach((d, i) => (this.primaryOam[maskAsByte(this.oamAddress + i)] = d))
   }
 
   /*

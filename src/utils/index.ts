@@ -1,7 +1,7 @@
-import { NullableError } from '/@/errors'
+import { NullableError } from '@/errors'
 
-export * from '/@/utils/integer'
-export * from '/@/utils/vue'
+export * from '@/utils/integer'
+export * from '@/utils/vue'
 
 export function capitalize(value: string): string {
   return value[0].toUpperCase() + value.slice(1)
